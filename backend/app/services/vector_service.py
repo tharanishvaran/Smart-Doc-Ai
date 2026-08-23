@@ -26,8 +26,17 @@ def get_chroma_client():
         if not os.path.isabs(persist_dir):
             persist_dir = os.path.join(_BACKEND_ROOT, persist_dir)
         persist_dir = os.path.normpath(persist_dir)
+        os.makedirs(persist_dir, exist_ok=True)
         logger.info(f'Initializing ChromaDB at: {persist_dir}')
-        _chroma_client = chromadb.PersistentClient(path=persist_dir)
+        try:
+            from chromadb.config import Settings
+            _chroma_client = chromadb.PersistentClient(
+                path=persist_dir,
+                settings=Settings(anonymized_telemetry=False, is_persistent=True)
+            )
+        except Exception as e:
+            logger.warning(f'ChromaDB initialization fallback: {e}')
+            _chroma_client = chromadb.PersistentClient(path=persist_dir)
     
     return _chroma_client
 
