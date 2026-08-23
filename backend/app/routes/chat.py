@@ -11,15 +11,52 @@ chat_bp = Blueprint('chat', __name__)
 rag_service = RAGService()
 
 
-@chat_bp.route('/test-gemini', methods=['GET', 'POST'])
-def test_gemini_endpoint():
-    from app.services.gemini_service import GeminiService
-    gs = GeminiService()
+@chat_bp.route('/diag-ask', methods=['GET', 'POST'])
+def diag_ask_endpoint():
+    steps = []
     try:
-        ans = gs.generate_answer(context="", question="test ping")
-        return success_response(data={'answer': ans})
+        steps.append("1. Creating GeminiService")
+        from app.services.gemini_service import GeminiService
+        gs = GeminiService()
+        
+        steps.append("2. Calling Gemini generate_answer directly")
+        ans = gs.generate_answer(context="Java is a programming language", question="what is java")
+        steps.append(f"3. Gemini responded: {ans[:60]}...")
+        
+        steps.append("4. Testing VectorService")
+        from app.services.vector_service import VectorService
+        vs = VectorService()
+        res = vs.query([0.01]*768, user_id=1)
+        steps.append(f"5. VectorService query returned: {len(res)} chunks")
+        
+        steps.append("6. Testing RAGService")
+        from app.models.user import User
+        from app.models.chat_session import ChatSession
+        u = User.query.first()
+        if not u:
+            u = User(email="diag_user@example.com", name="Diag User")
+            u.set_password("Pass123!")
+            db.session.add(u)
+            db.session.commit()
+        
+        s = ChatSession(user_id=u.id, title="Diag Test")
+        db.session.add(s)
+        db.session.commit()
+        steps.append(f"7. ChatSession created (id={s.id})")
+        
+        rag_res = rag_service.answer_question(
+            question="what is java",
+            user_id=u.id,
+            session_id=s.id,
+            explanation_mode="normal",
+            language="English"
+        )
+        steps.append(f"8. RAG completed successfully: {rag_res.get('answer')[:60]}...")
+        return success_response(data={'steps': steps, 'answer': rag_res.get('answer')})
     except Exception as e:
-        return error_response(f"Gemini error: {str(e)}", 500)
+        import traceback
+        return error_response(f"Step failed: {steps[-1] if steps else 'init'} | Error: {str(e)} | Trace: {traceback.format_exc()}", 500)
+
 
 
 
