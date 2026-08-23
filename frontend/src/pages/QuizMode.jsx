@@ -13,6 +13,7 @@ import {
   RefreshCw,
   FileQuestion
 } from 'lucide-react';
+import './QuizMode.css';
 
 export default function QuizMode() {
   const [activeTab, setActiveTab] = useState('interactive'); // 'interactive' or 'generator'

@@ -10,9 +10,12 @@ import {
   Sparkles,
   Zap,
   Target,
-  Award
+  Award,
+  X
 } from 'lucide-react';
 import './Sidebar.css';
+import { useState } from 'react';
+import { ViewProfileModal } from './ProfileImageModal';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -24,11 +27,7 @@ const NAV_ITEMS = [
   { to: '/profile', icon: User, label: 'Profile' },
 ];
 
-
-import { useState } from 'react';
-import { ViewProfileModal } from './ProfileImageModal';
-
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showViewModal, setShowViewModal] = useState(false);
@@ -38,9 +37,22 @@ export default function Sidebar() {
     navigate('/login');
   };
 
+  const handleNavClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
     <>
-      <aside className="sidebar glass-sidebar">
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={onClose} 
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`sidebar glass-sidebar ${isOpen ? 'mobile-open' : ''}`}>
         {/* Sidebar Header Logo */}
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">
@@ -50,15 +62,25 @@ export default function Sidebar() {
             <span className="logo-brand">SmartDoc</span>
             <span className="logo-badge">AI</span>
           </div>
+
+          {/* Mobile Close Drawer Button */}
+          <button 
+            className="sidebar-close-btn btn-ghost" 
+            onClick={onClose}
+            aria-label="Close Navigation"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Navigation items */}
         <nav className="sidebar-nav">
-          <div className="nav-section-title">MAIN MENU</div>
+          <div className="nav-section-title">ACADEMIC CONSOLE</div>
           {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
+              onClick={handleNavClick}
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
             >
               <Icon className="sidebar-icon" size={18} />
@@ -68,12 +90,13 @@ export default function Sidebar() {
           ))}
 
           {/* Pro / RAG Status Card */}
-          <div className="sidebar-promo-card">
+          <div className="sidebar-promo-card holo-card">
             <div className="promo-header">
+              <div className="promo-pulse" />
               <Zap size={15} className="promo-icon" />
-              <span>RAG Engine 2.0</span>
+              <span>RAG Engine 2.1</span>
             </div>
-            <p>Developed by Tharanish</p>
+            <p>High-Speed Neural Vector Intelligence</p>
           </div>
         </nav>
 
@@ -83,14 +106,13 @@ export default function Sidebar() {
             <div 
               className="sidebar-user" 
               onClick={() => setShowViewModal(true)}
-              style={{ cursor: 'pointer' }}
               title="Click to view profile photo"
             >
               {user.avatar_url ? (
                 <img 
                   src={user.avatar_url} 
                   alt={user.name} 
-                  style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }}
+                  className="sidebar-avatar-img"
                 />
               ) : (
                 <div className="sidebar-avatar">
@@ -106,7 +128,7 @@ export default function Sidebar() {
 
           <button className="sidebar-logout btn btn-ghost btn-sm" onClick={handleLogout}>
             <LogOut size={16} />
-            <span>Logout</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </aside>
@@ -120,4 +142,3 @@ export default function Sidebar() {
     </>
   );
 }
-

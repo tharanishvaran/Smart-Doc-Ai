@@ -12,8 +12,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  z-index: 90;
-  transition: all var(--transition-smooth);
+  z-index: 100;
+  transition: left var(--transition-smooth), background-color var(--transition-smooth);
 }
 
 .navbar-left {
@@ -22,23 +22,49 @@
   gap: 16px;
 }
 
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--primary-subtle);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.navbar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .navbar-title {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-main);
+  letter-spacing: -0.02em;
+  font-family: var(--font-heading);
 }
 
 .navbar-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
   background: var(--primary-subtle);
   color: var(--primary);
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border: 1px solid var(--primary-border);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .pill-dot {
@@ -52,13 +78,13 @@
 
 @keyframes pulseDot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 0.4; transform: scale(0.75); }
 }
 
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 /* Theme Switcher */
@@ -71,11 +97,12 @@
   align-items: center;
   gap: 8px;
   padding: 7px 14px;
+  border-radius: var(--radius-full);
 }
 
 .theme-name {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.84rem;
+  font-weight: 700;
 }
 
 .chevron {
@@ -87,9 +114,9 @@
 
 .theme-dropdown-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
-  width: 210px;
+  width: 220px;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -99,11 +126,11 @@
 }
 
 .dropdown-header {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   color: var(--text-dim);
-  padding: 6px 10px 4px;
+  padding: 6px 12px 4px;
 }
 
 .theme-option {
@@ -111,11 +138,11 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 0.86rem;
-  font-weight: 500;
+  font-weight: 600;
   transition: all var(--transition-fast);
   background: transparent;
   cursor: pointer;
@@ -129,7 +156,7 @@
 .theme-option.active {
   background: var(--primary-subtle);
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .theme-icon {
@@ -147,42 +174,30 @@
   border-radius: 50%;
 }
 
-/* Icon Buttons */
-.navbar-icon-btn {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-}
-.navbar-icon-btn:hover {
-  color: var(--text-main);
-  background: var(--bg-surface-hover);
-}
-
-.notification-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 8px var(--primary);
-}
-
 /* User Pill */
 .navbar-user-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 12px 5px 6px;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
   background: var(--bg-surface-hover);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.navbar-user-pill:hover {
+  border-color: var(--border-active);
+  transform: translateY(-1px);
+}
+
+.user-pill-avatar-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--primary);
 }
 
 .user-pill-avatar {
@@ -191,7 +206,7 @@
   border-radius: 50%;
   background: var(--primary-gradient);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -199,14 +214,36 @@
 }
 
 .user-pill-name {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.84rem;
+  font-weight: 700;
   color: var(--text-main);
 }
 
+/* ─── Responsive Navbar Breakpoints ───────────────────────────────────── */
 @media (max-width: 768px) {
   .navbar {
     left: 0;
     padding: 0 16px;
+    height: calc(var(--navbar-height) - 6px);
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .navbar-pill {
+    display: none;
+  }
+
+  .navbar-title {
+    font-size: 1.05rem;
+  }
+
+  .theme-name {
+    display: none;
+  }
+
+  .theme-switcher-btn {
+    padding: 8px;
   }
 }
