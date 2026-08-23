@@ -1,5 +1,5 @@
 services:
-  # 100% Free Web Service on Render (No Credit Card / Payment Required)
+  # 1. Backend Web Service (100% Free - No Credit Card Required)
   - type: web
     name: smartdoc-backend
     env: python
@@ -17,3 +17,15 @@ services:
         sync: false
       - key: DATABASE_URL
         value: sqlite:///app.db
+
+  # 2. Frontend Static Site (100% Free)
+  - type: web
+    name: smartdoc-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
