@@ -20,7 +20,7 @@ class OllamaService:
     def __init__(self):
         self.base_url = None
         self.model = None
-        self.timeout = 120  # seconds
+        self.timeout = (2.0, 20.0)  # (connect_timeout, read_timeout) to prevent hanging if Ollama is offline
     
     def _get_config(self):
         base_url = current_app.config.get('OLLAMA_BASE_URL', 'http://localhost:11434')

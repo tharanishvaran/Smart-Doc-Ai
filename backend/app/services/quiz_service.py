@@ -32,12 +32,9 @@ class QuizService:
             return ""
 
     def _call_llm(self, prompt: str) -> str:
-        use_gemini = bool(current_app.config.get('GEMINI_API_KEY'))
+        use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            try:
-                return self.gemini_service.generate_answer(context="", question=prompt)
-            except Exception as e:
-                logger.warning(f"Gemini call failed in QuizService: {e}")
+            return self.gemini_service.generate_answer(context="", question=prompt)
         return self.ollama_service.generate_answer(context="", question=prompt)
 
     def generate_questions(self, user_id: int, topic: str, question_type: str, mark_type: str = '5', count: int = 5, category_id: int = None) -> str:

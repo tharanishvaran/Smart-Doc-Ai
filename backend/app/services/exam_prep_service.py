@@ -31,12 +31,9 @@ class ExamPrepService:
             return "General Knowledge Mode"
 
     def _call_llm(self, prompt: str) -> str:
-        use_gemini = bool(current_app.config.get('GEMINI_API_KEY'))
+        use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            try:
-                return self.gemini_service.generate_answer(context="", question=prompt)
-            except Exception as e:
-                logger.warning(f"Gemini call failed in ExamPrepService: {e}")
+            return self.gemini_service.generate_answer(context="", question=prompt)
         return self.ollama_service.generate_answer(context="", question=prompt)
 
     def _clean_and_parse_json(self, raw: str) -> dict:
