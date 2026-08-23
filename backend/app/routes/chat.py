@@ -11,6 +11,18 @@ chat_bp = Blueprint('chat', __name__)
 rag_service = RAGService()
 
 
+@chat_bp.route('/test-gemini', methods=['GET', 'POST'])
+def test_gemini_endpoint():
+    from app.services.gemini_service import GeminiService
+    gs = GeminiService()
+    try:
+        ans = gs.generate_answer(context="", question="test ping")
+        return success_response(data={'answer': ans})
+    except Exception as e:
+        return error_response(f"Gemini error: {str(e)}", 500)
+
+
+
 # ─── Chat Sessions ─────────────────────────────────────────────────────────────
 
 @chat_bp.route('/sessions', methods=['GET'])
