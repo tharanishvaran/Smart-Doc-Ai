@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, Bell, Sparkles, ChevronDown } from 'lucide-react';
+import { Palette, Bell, Sparkles, ChevronDown, Menu } from 'lucide-react';
 import './Navbar.css';
 
 import { ViewProfileModal } from './ProfileImageModal';
@@ -17,7 +17,7 @@ const PAGE_TITLES = {
   '/profile': 'User Profile & Settings',
 };
 
-export default function Navbar() {
+export default function Navbar({ onToggleSidebar }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const { theme, changeTheme, themes } = useTheme();
@@ -31,6 +31,13 @@ export default function Navbar() {
     <>
       <header className="navbar glass-navbar">
         <div className="navbar-left">
+          <button 
+            className="mobile-hamburger-btn btn btn-ghost btn-sm" 
+            onClick={onToggleSidebar}
+            aria-label="Toggle menu"
+          >
+            <Menu size={20} />
+          </button>
           <h2 className="navbar-title">{title}</h2>
           <div className="navbar-pill">
             <span className="pill-dot" />

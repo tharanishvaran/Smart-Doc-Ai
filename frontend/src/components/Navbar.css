@@ -204,9 +204,24 @@
   color: var(--text-main);
 }
 
+.mobile-hamburger-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+}
+
 @media (max-width: 768px) {
   .navbar {
     left: 0;
     padding: 0 16px;
+  }
+  .mobile-hamburger-btn {
+    display: flex;
+  }
+  .navbar-pill {
+    display: none;
   }
 }

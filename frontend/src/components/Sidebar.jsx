@@ -28,7 +28,7 @@ const NAV_ITEMS = [
 import { useState } from 'react';
 import { ViewProfileModal } from './ProfileImageModal';
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [showViewModal, setShowViewModal] = useState(false);
@@ -38,9 +38,14 @@ export default function Sidebar() {
     navigate('/login');
   };
 
+  const handleLinkClick = () => {
+    if (onClose) onClose();
+  };
+
   return (
     <>
-      <aside className="sidebar glass-sidebar">
+      {isOpen && <div className="sidebar-mobile-backdrop" onClick={onClose} />}
+      <aside className={`sidebar glass-sidebar ${isOpen ? 'mobile-open' : ''}`}>
         {/* Sidebar Header Logo */}
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">
@@ -59,6 +64,7 @@ export default function Sidebar() {
             <NavLink
               key={to}
               to={to}
+              onClick={handleLinkClick}
               className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
             >
               <Icon className="sidebar-icon" size={18} />

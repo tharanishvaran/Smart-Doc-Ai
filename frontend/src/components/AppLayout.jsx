@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
 export default function AppLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="app-layout">
       {/* Dynamic Ambient Background Blobs */}
@@ -11,8 +14,8 @@ export default function AppLayout() {
         <div className="blob blob-2" />
       </div>
 
-      <Sidebar />
-      <Navbar />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Navbar onToggleSidebar={() => setSidebarOpen(prev => !prev)} />
 
       <main className="main-content">
         <div className="page-container animate-fade-in">
