@@ -142,7 +142,9 @@ def ask():
 
     except RuntimeError as e:
         db.session.rollback()
+        logger.warning(f"Chat RuntimeError: {e}")
         return error_response(str(e), 503)
     except Exception as e:
         db.session.rollback()
-        return error_response('An error occurred while processing your question.', 500)
+        logger.exception(f"Chat unexpected error: {e}")
+        return error_response(f'Error: {str(e)}', 500)
