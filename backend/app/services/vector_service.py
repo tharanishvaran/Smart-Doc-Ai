@@ -197,7 +197,16 @@ class VectorService:
         
         Returns list of results with text, metadata, and relevance score.
         """
-        collection = get_collection()
+        try:
+            collection = get_collection()
+            total_count = collection.count() if collection else 0
+            if total_count == 0:
+                logger.info('Vector store is empty, proceeding with general knowledge.')
+                return []
+            n_results = min(n_results, total_count)
+        except Exception as e:
+            logger.warning(f'Vector store count check notice: {e}')
+            return []
         
         # Build where filter — always scope to the user
         # ChromaDB v0.4+ requires $and operator for multiple conditions
@@ -229,15 +238,15 @@ class VectorService:
         except Exception as e:
             if 'dimension' in str(e).lower():
                 logger.warning(f'ChromaDB vector dimension mismatch in query ({e}). Resetting collection...')
-                client = get_chroma_client()
                 try:
+                    client = get_chroma_client()
                     client.delete_collection(COLLECTION_NAME)
                 except Exception:
                     pass
                 global _collection
                 _collection = None
                 return []
-            logger.error(f'ChromaDB query failed: {e}')
+            logger.warning(f'ChromaDB query notice (proceeding with fallback): {e}')
             return []
         
         # Parse results
