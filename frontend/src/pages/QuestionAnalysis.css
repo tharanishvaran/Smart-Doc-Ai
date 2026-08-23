@@ -188,3 +188,32 @@
   font-size: 0.8rem;
   color: var(--text-muted);
 }
+
+@media (max-width: 768px) {
+  .checklist-panel {
+    padding: 16px;
+    gap: 14px;
+  }
+  .summary-card {
+    padding: 16px;
+  }
+  .topic-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  .topic-title {
+    font-size: 1rem;
+  }
+  .topic-samples-box {
+    padding: 10px 12px;
+  }
+  .sample-q-item {
+    font-size: 0.82rem;
+  }
+  .doc-check-item {
+    padding: 10px 12px;
+  }
+  .doc-check-name {
+    font-size: 0.82rem;
+  }
+}

@@ -281,6 +281,8 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .doc-card-meta {
@@ -319,7 +321,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 60px 24px;
+  padding: 40px 16px;
   gap: 12px;
   border-radius: var(--radius-lg);
   margin-top: 12px;
@@ -333,15 +335,85 @@
 }
 
 .empty-state h3 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
 }
 
 .empty-state p {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-muted);
   max-width: 440px;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .upload-section {
+    padding: 16px;
+    gap: 14px;
+  }
+  .upload-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .upload-section-header .badge {
+    white-space: normal;
+    font-size: 0.72rem;
+    line-height: 1.3;
+    padding: 4px 8px;
+  }
+  .upload-zone-modern {
+    padding: 20px 12px;
+    gap: 10px;
+  }
+  .upload-text-content h4 {
+    font-size: 0.95rem;
+  }
+  .upload-text-content p {
+    font-size: 0.78rem;
+  }
+  .upload-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+  .category-select {
+    max-width: 100%;
+    width: 100%;
+  }
+  .upload-controls .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .doc-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px;
+    gap: 12px;
+  }
+  .search-box {
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+  }
+  .category-chips {
+    gap: 6px;
+  }
+  .filter-chip {
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+  .doc-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .doc-card {
+    padding: 14px;
+  }
+  .selected-file-name {
+    max-width: 160px;
+  }
 }

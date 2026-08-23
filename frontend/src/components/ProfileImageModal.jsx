@@ -129,12 +129,12 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20
+        padding: 16
       }}
     >
-      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 440, padding: 24, borderRadius: 20, zIndex: 1000000 }}>
+      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(440px, 94vw)', padding: '20px 16px', borderRadius: 20, zIndex: 1000000 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-main)' }}>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-main)', fontSize: '1.05rem' }}>
             <Camera size={18} className="text-primary" /> Adjust Profile Frame
           </h3>
           <button className="btn btn-ghost btn-sm" onClick={onClose} style={{ padding: 4 }}>
@@ -142,7 +142,7 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
           </button>
         </div>
 
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+        <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 16 }}>
           Drag image to position inside circle and use slider to adjust frame zoom scale.
         </p>
 
@@ -154,7 +154,7 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          <canvas ref={canvasRef} width={250} height={250} style={{ borderRadius: '50%', boxShadow: '0 0 30px var(--primary-glow)' }} />
+          <canvas ref={canvasRef} width={250} height={250} style={{ borderRadius: '50%', boxShadow: '0 0 25px var(--primary-glow)', maxWidth: '100%' }} />
         </div>
 
         {/* Zoom Controls */}
@@ -174,12 +174,12 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn btn-secondary btn-sm" onClick={() => { setZoom(1.2); setOffset({ x: 0, y: 0 }); }}>
             <RotateCcw size={14} /> Reset
           </button>
 
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn-ghost btn-sm" onClick={onClose} disabled={uploading}>Cancel</button>
             <button className="btn btn-primary btn-sm" onClick={handleSaveCropped} disabled={uploading}>
               <Check size={14} /> {uploading ? 'Saving...' : 'Apply & Save Frame'}
@@ -210,57 +210,57 @@ export function ViewProfileModal({ user, onClose, onChangePhoto }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: 20
+        padding: 16
       }}
     >
-      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 440, padding: 32, borderRadius: 24, textAlign: 'center', position: 'relative', zIndex: 1000000 }}>
+      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 94vw)', padding: '24px 16px', borderRadius: 20, textAlign: 'center', position: 'relative', zIndex: 1000000 }}>
         <button 
           className="btn btn-ghost btn-sm" 
           onClick={onClose} 
-          style={{ position: 'absolute', top: 16, right: 16, padding: 6 }}
+          style={{ position: 'absolute', top: 14, right: 14, padding: 6 }}
         >
           <X size={18} />
         </button>
 
-        <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-main)' }}>Profile Photo Preview</h3>
+        <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-main)', fontSize: '1.15rem' }}>Profile Photo Preview</h3>
 
-        <div style={{ display: 'flex', justifyContent: 'center', margin: '16px 0 24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '14px 0 20px' }}>
           {user.avatar_url ? (
             <img 
               src={user.avatar_url} 
               alt={user.name} 
               style={{
-                width: 220,
-                height: 220,
+                width: 'min(200px, 50vw)',
+                height: 'min(200px, 50vw)',
                 borderRadius: '50%',
                 objectFit: 'cover',
                 border: '4px solid var(--primary)',
-                boxShadow: '0 0 45px var(--primary-glow)'
+                boxShadow: '0 0 35px var(--primary-glow)'
               }}
             />
           ) : (
             <div style={{
-              width: 220,
-              height: 220,
+              width: 'min(200px, 50vw)',
+              height: 'min(200px, 50vw)',
               borderRadius: '50%',
               background: 'var(--primary-gradient)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '5.5rem',
+              fontSize: 'clamp(3rem, 10vw, 5rem)',
               fontWeight: 800,
               color: '#fff',
-              boxShadow: '0 0 45px var(--primary-glow)'
+              boxShadow: '0 0 35px var(--primary-glow)'
             }}>
               {user.name?.charAt(0).toUpperCase()}
             </div>
           )}
         </div>
 
-        <h2 style={{ margin: '0 0 6px 0', color: 'var(--text-main)', fontSize: '1.4rem' }}>{user.name}</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: 20 }}>{user.email}</p>
+        <h2 style={{ margin: '0 0 4px 0', color: 'var(--text-main)', fontSize: '1.25rem', overflowWrap: 'break-word' }}>{user.name}</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginBottom: 18, overflowWrap: 'break-word' }}>{user.email}</p>
 
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
           {onChangePhoto && (
             <button className="btn btn-primary btn-sm" onClick={() => { onClose(); onChangePhoto(); }}>
               <Camera size={14} /> Change Photo

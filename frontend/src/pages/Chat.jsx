@@ -13,7 +13,6 @@ import {
   Send, 
   Sparkles, 
   BookOpen, 
-  Filter, 
   Copy, 
   Check,
   ChevronDown,

@@ -80,10 +80,10 @@ export default function Profile() {
 
       <div className="grid-2" style={{ alignItems: 'flex-start' }}>
         {/* User Account Card */}
-        <div className="glass-card" style={{ padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
+        <div className="glass-card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
             <div 
-              style={{ position: 'relative', cursor: 'pointer' }} 
+              style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }} 
               onClick={() => setShowViewModal(true)}
               title="Click to view full profile picture"
             >
@@ -92,27 +92,27 @@ export default function Profile() {
                   src={user.avatar_url} 
                   alt={user.name} 
                   style={{
-                    width: 80,
-                    height: 80,
+                    width: 76,
+                    height: 76,
                     borderRadius: '50%',
                     objectFit: 'cover',
                     border: '3px solid var(--primary)',
-                    boxShadow: '0 0 25px var(--primary-glow)'
+                    boxShadow: '0 0 20px var(--primary-glow)'
                   }}
                 />
               ) : (
                 <div style={{ 
-                  width: 80, 
-                  height: 80, 
+                  width: 76, 
+                  height: 76, 
                   background: 'var(--primary-gradient)', 
                   borderRadius: '50%', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
-                  fontSize: '2.2rem', 
+                  fontSize: '2rem', 
                   color: '#fff', 
                   fontWeight: 800,
-                  boxShadow: '0 0 25px var(--primary-glow)'
+                  boxShadow: '0 0 20px var(--primary-glow)'
                 }}>
                   {user?.name?.charAt(0).toUpperCase()}
                 </div>
@@ -149,13 +149,13 @@ export default function Profile() {
               />
             </div>
 
-            <div>
-              <h2 style={{ margin: 0 }}>{user?.name}</h2>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <h2 style={{ margin: 0, fontSize: 'clamp(1.15rem, 2.5vw, 1.4rem)', overflowWrap: 'break-word' }}>{user?.name}</h2>
               <span className="badge badge-primary" style={{ marginTop: 6, textTransform: 'capitalize' }}>
                 <Shield size={12} /> {user?.role || 'Student'}
               </span>
               
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                 <button 
                   type="button"
                   className="btn btn-primary btn-sm" 
@@ -183,7 +183,7 @@ export default function Profile() {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="input-group">
               <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <User size={14} className="text-primary" /> Full Name
@@ -213,24 +213,24 @@ export default function Profile() {
         </div>
 
         {/* Theme & Workspace Settings Card */}
-        <div className="glass-card" style={{ padding: 28 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <div className="glass-card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <Palette size={20} className="text-primary" />
             <h3 style={{ margin: 0 }}>Theme & Appearance</h3>
           </div>
 
-          <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: 20 }}>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
             Select a high-contrast theme customized for maximum readability and visual appeal.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
             {themes.map(t => (
               <button
                 key={t.id}
                 onClick={() => changeTheme(t.id)}
                 className="glass-card"
                 style={{
-                  padding: 16,
+                  padding: 14,
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 8,
@@ -244,19 +244,19 @@ export default function Profile() {
                   <span style={{ fontSize: '1.2rem' }}>{t.icon}</span>
                   {theme === t.id && <Check size={16} style={{ color: 'var(--primary)' }} />}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)' }}>{t.name}</div>
+                <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-main)' }}>{t.name}</div>
                 <div style={{ width: '100%', height: 4, borderRadius: 2, background: t.color }} />
               </button>
             ))}
           </div>
 
           {/* Developer Credit & RAG Overview */}
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '0.9rem', marginBottom: 8, color: 'var(--text-main)' }}>
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '0.86rem', marginBottom: 6, color: 'var(--text-main)', flexWrap: 'wrap' }}>
               <Cpu size={16} className="text-primary" />
               <span>RAG Engine 2.0 • Developed by Tharanish</span>
             </div>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               Vector Store: ChromaDB • Embedding Model: all-MiniLM-L6-v2 • LLM Backend: Gemini 3.5 & Ollama
             </p>
           </div>

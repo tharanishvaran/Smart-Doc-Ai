@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Sparkles, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
 
 export default function Login() {
   const [searchParams] = useSearchParams();

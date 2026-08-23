@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Palette, Bell, Sparkles, ChevronDown, Menu } from 'lucide-react';
+import { Palette, Bell, ChevronDown, Menu } from 'lucide-react';
 import './Navbar.css';
 
 import { ViewProfileModal } from './ProfileImageModal';

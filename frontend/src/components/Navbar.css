@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 0 28px;
   z-index: 90;
   transition: all var(--transition-smooth);
 }
@@ -19,13 +19,19 @@
 .navbar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
 }
 
 .navbar-title {
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .navbar-pill {
@@ -39,6 +45,7 @@
   border: 1px solid rgba(0, 242, 254, 0.2);
   font-size: 0.72rem;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .pill-dot {
@@ -58,7 +65,8 @@
 .navbar-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 /* Theme Switcher */
@@ -70,11 +78,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 14px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
 }
 
 .theme-name {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -150,8 +159,8 @@
 /* Icon Buttons */
 .navbar-icon-btn {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -178,28 +187,33 @@
 .navbar-user-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 5px 12px 5px 6px;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
   background: var(--bg-surface-hover);
   border: 1px solid var(--border);
   border-radius: 999px;
+  transition: all var(--transition-fast);
+}
+
+.navbar-user-pill:hover {
+  border-color: var(--border-active);
 }
 
 .user-pill-avatar {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--primary-gradient);
   color: #ffffff;
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .user-pill-name {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-main);
 }
@@ -208,20 +222,55 @@
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  padding: 8px;
   border-radius: var(--radius-sm);
   color: var(--text-main);
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .navbar {
     left: 0;
-    padding: 0 16px;
+    padding: 0 12px;
+    height: 60px;
+  }
+  .navbar-left {
+    gap: 8px;
   }
   .mobile-hamburger-btn {
     display: flex;
   }
   .navbar-pill {
     display: none;
+  }
+  .navbar-right {
+    gap: 6px;
+  }
+  .theme-switcher-btn {
+    padding: 6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    justify-content: center;
+  }
+  .theme-name, .chevron {
+    display: none;
+  }
+  .navbar-user-pill {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+  .user-pill-name {
+    display: none;
+  }
+  .user-pill-avatar {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--primary);
+  }
+  .navbar-icon-btn {
+    width: 34px;
+    height: 34px;
   }
 }

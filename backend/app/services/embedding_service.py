@@ -27,27 +27,7 @@ def _get_api_key() -> str:
     return keys[0] if keys else ''
 
 
-def _get_local_model():
-    """Lazily load local SentenceTransformer if installed."""
-    global _model_instance
-    if _model_instance is None:
-        try:
-            from sentence_transformers import SentenceTransformer
-            name = 'all-MiniLM-L6-v2'
-            try:
-                name = current_app.config.get('EMBEDDING_MODEL', name)
-            except Exception:
-                pass
-            logger.info(f'Loading local embedding model: {name}')
-            _model_instance = SentenceTransformer(name)
-            logger.info('Local embedding model loaded successfully.')
-        except ImportError:
-            logger.warning('sentence-transformers is not installed.')
-            return None
-        except Exception as e:
-            logger.error(f'Failed to load local SentenceTransformer: {e}')
-            return None
-    return _model_instance
+
 
 
 def _hash_embedding(text: str, dim: int = 768) -> list[float]:

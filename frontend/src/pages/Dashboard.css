@@ -376,6 +376,51 @@
 }
 
 @media (max-width: 768px) {
-  .hero-banner { padding: 24px; }
-  .category-bar-label { width: 90px; font-size: 0.8rem; }
+  .hero-banner { 
+    padding: 20px 16px; 
+    border-radius: var(--radius-lg);
+  }
+  .hero-content h1 {
+    font-size: clamp(1.4rem, 5.5vw, 1.85rem);
+    line-height: 1.25;
+  }
+  .hero-content p {
+    font-size: 0.88rem;
+    margin-bottom: 18px;
+  }
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .dashboard-section {
+    padding: 16px 14px;
+    gap: 14px;
+  }
+  .stat-card {
+    padding: 16px;
+    gap: 12px;
+  }
+  .stat-value {
+    font-size: 1.8rem;
+  }
+  .recent-item-card {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .recent-item-name {
+    font-size: 0.84rem;
+  }
+  .category-bar-label { 
+    width: 85px; 
+    font-size: 0.78rem; 
+  }
+  .category-bar-row {
+    gap: 10px;
+  }
 }

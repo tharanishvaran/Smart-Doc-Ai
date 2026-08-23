@@ -16,7 +16,6 @@ import Profile from './pages/Profile';
 
 // Layout
 import AppLayout from './components/AppLayout';
-import LoadingSpinner from './components/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();

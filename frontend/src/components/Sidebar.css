@@ -188,13 +188,15 @@
 
 @media (max-width: 768px) {
   .sidebar {
+    width: min(280px, 85vw);
     transform: translateX(-100%);
     box-shadow: none;
     z-index: 200;
+    overflow-x: hidden;
   }
   .sidebar.mobile-open {
     transform: translateX(0);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6);
   }
   .sidebar-mobile-backdrop {
     position: fixed;
@@ -203,5 +205,9 @@
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 190;
+  }
+  .sidebar-promo-card {
+    margin-top: 14px;
+    padding: 12px;
   }
 }

@@ -8,9 +8,7 @@ import {
   FileText, 
   HelpCircle, 
   Sparkles, 
-  BookOpen, 
-  Clock,
-  CheckCircle2,
+  CheckCircle2, 
   AlertTriangle
 } from 'lucide-react';
 
@@ -95,7 +93,7 @@ export default function ExamPrep() {
       </div>
 
       {/* Tabs */}
-      <div className="mode-selector glass-card" style={{ padding: 12, marginBottom: 24 }}>
+      <div className="mode-selector glass-card" style={{ padding: '8px 10px', marginBottom: 20 }}>
         <button 
           className={`mode-pill ${activeTab === 'strategy' ? 'active' : ''}`}
           onClick={() => setActiveTab('strategy')}
@@ -129,7 +127,7 @@ export default function ExamPrep() {
       </div>
 
       {/* Form Card */}
-      <div className="glass-card" style={{ padding: 24, marginBottom: 28 }}>
+      <div className="glass-card" style={{ padding: 20, marginBottom: 24 }}>
         <div className="grid-2" style={{ marginBottom: 16 }}>
           <div className="input-group">
             <label className="input-label">Subject / Course Name</label>
@@ -178,37 +176,37 @@ export default function ExamPrep() {
 
         {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>⚠️ {error}</div>}
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           {activeTab === 'strategy' && (
-            <button className="btn btn-primary" onClick={handleGenerateStrategy} disabled={loading}>
+            <button className="btn btn-primary" onClick={handleGenerateStrategy} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? <Sparkles className="spin" size={16} /> : <Target size={16} />}
               <span>Generate Preparation Strategy</span>
             </button>
           )}
 
           {activeTab === 'planner' && (
-            <button className="btn btn-primary" onClick={handleGenerateStudyPlan} disabled={loading}>
+            <button className="btn btn-primary" onClick={handleGenerateStudyPlan} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? <Sparkles className="spin" size={16} /> : <Calendar size={16} />}
               <span>Create Day-by-Day Study Plan</span>
             </button>
           )}
 
           {activeTab === 'topics' && (
-            <button className="btn btn-primary" onClick={handleDetectTopics} disabled={loading}>
+            <button className="btn btn-primary" onClick={handleDetectTopics} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? <Sparkles className="spin" size={16} /> : <Flame size={16} />}
               <span>Detect Priority Topics</span>
             </button>
           )}
 
           {activeTab === 'papers' && (
-            <button className="btn btn-primary" onClick={handlePaperAnalysis} disabled={loading}>
+            <button className="btn btn-primary" onClick={handlePaperAnalysis} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? <Sparkles className="spin" size={16} /> : <FileText size={16} />}
               <span>Analyze Previous Papers</span>
             </button>
           )}
 
           {activeTab === 'expected' && (
-            <button className="btn btn-primary" onClick={handleExpectedQuestions} disabled={loading}>
+            <button className="btn btn-primary" onClick={handleExpectedQuestions} disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? <Sparkles className="spin" size={16} /> : <HelpCircle size={16} />}
               <span>Predict Expected Questions</span>
             </button>
@@ -220,26 +218,26 @@ export default function ExamPrep() {
 
       {/* Results Display */}
       {activeTab === 'strategy' && strategyResult && (
-        <div className="glass-card animate-fade-in" style={{ padding: 28 }}>
+        <div className="glass-card animate-fade-in" style={{ padding: 22, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
           <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Target size={20} className="text-primary" /> Personalized Exam Preparation Strategy
           </h3>
-          <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{strategyResult}</div>
+          <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: '0.94rem' }}>{strategyResult}</div>
         </div>
       )}
 
       {activeTab === 'planner' && studyPlanResult && (
-        <div className="glass-card animate-fade-in" style={{ padding: 28 }}>
+        <div className="glass-card animate-fade-in" style={{ padding: 22, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
           <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Calendar size={20} className="text-primary" /> {studyPlanResult.total_days}-Day AI Study Schedule ({studyPlanResult.subject})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {studyPlanResult.plan?.map((item, idx) => (
-              <div key={idx} className="glass-card" style={{ padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div>
+              <div key={idx} className="glass-card" style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
                   <span className="badge badge-primary" style={{ marginRight: 10 }}>Day {item.day}</span>
                   <strong>{item.focus}</strong>
-                  <ul style={{ margin: '8px 0 0 20px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  <ul style={{ margin: '8px 0 0 20px', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
                     {item.activities?.map((act, i) => <li key={i}>{act}</li>)}
                   </ul>
                 </div>

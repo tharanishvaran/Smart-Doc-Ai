@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { quizService } from '../services/quizService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { 
-  HelpCircle, 
   Play, 
   Clock, 
   CheckCircle2, 
   XCircle, 
-  Award, 
   Sparkles, 
   ArrowRight,
   RefreshCw,
@@ -144,7 +142,7 @@ export default function QuizMode() {
       </div>
 
       {/* Tabs */}
-      <div className="mode-selector glass-card" style={{ padding: 12, marginBottom: 24 }}>
+      <div className="mode-selector glass-card" style={{ padding: '8px 10px', marginBottom: 20 }}>
         <button 
           className={`mode-pill ${activeTab === 'interactive' ? 'active' : ''}`}
           onClick={() => setActiveTab('interactive')}
@@ -165,7 +163,7 @@ export default function QuizMode() {
       {activeTab === 'interactive' && (
         <>
           {!quizSession ? (
-            <div className="glass-card" style={{ padding: 28, maxWidth: 640 }}>
+            <div className="glass-card" style={{ padding: 20, maxWidth: 640 }}>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={20} className="text-primary" /> Start AI Adaptive Quiz
               </h3>
@@ -222,43 +220,43 @@ export default function QuizMode() {
               </button>
             </div>
           ) : (
-            <div className="glass-card animate-fade-in" style={{ padding: 28 }}>
+            <div className="glass-card animate-fade-in" style={{ padding: 20 }}>
               {/* Header Stats & Timer */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-                <div>
-                  <span className="badge badge-primary" style={{ marginRight: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span className="badge badge-primary">
                     Question {currentIdx + 1} of {quizSession.questions.length}
                   </span>
                   <span className="badge badge-secondary">Subject: {quizSession.subject}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   {timerEnabled && (
                     <div className={`quiz-timer ${timeLeft <= 10 ? 'alert-error' : ''}`}>
                       <Clock size={16} /> 00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
                     </div>
                   )}
-                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
                     Score: <span className="text-primary">{scoreBoard.correct}</span> / {scoreBoard.total}
                   </div>
                 </div>
               </div>
 
               {/* Question Text */}
-              <h3 style={{ marginBottom: 24, fontSize: '1.25rem', lineHeight: 1.5, color: 'var(--text-main)' }}>
+              <h3 style={{ marginBottom: 20, fontSize: 'clamp(1.05rem, 2.5vw, 1.25rem)', lineHeight: 1.5, color: 'var(--text-main)', overflowWrap: 'break-word', wordBreak: 'normal' }}>
                 {quizSession.questions[currentIdx]?.question}
               </h3>
 
               {/* Options if MCQ */}
               {quizSession.questions[currentIdx]?.options && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
                   {quizSession.questions[currentIdx].options.map((opt, i) => (
                     <button
                       key={i}
                       className={`glass-card ${selectedOption === i ? 'active-option' : ''}`}
                       onClick={() => !evalResult && setSelectedOption(i)}
                       style={{
-                        padding: '16px 20px',
+                        padding: '12px 16px',
                         textAlign: 'left',
                         cursor: evalResult ? 'default' : 'pointer',
                         border: selectedOption === i ? '2px solid var(--primary)' : '1px solid var(--border)',
@@ -268,13 +266,16 @@ export default function QuizMode() {
                         alignItems: 'center',
                         gap: 12,
                         width: '100%',
-                        fontSize: '0.95rem'
+                        fontSize: '0.92rem',
+                        overflowWrap: 'break-word',
+                        wordBreak: 'normal',
+                        whiteSpace: 'normal'
                       }}
                     >
-                      <strong style={{ minWidth: 24, color: selectedOption === i ? 'var(--primary)' : 'var(--text-main)', fontWeight: 700 }}>
+                      <strong style={{ minWidth: 22, color: selectedOption === i ? 'var(--primary)' : 'var(--text-main)', fontWeight: 700, flexShrink: 0 }}>
                         {String.fromCharCode(65 + i)}.
                       </strong> 
-                      <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{opt}</span>
+                      <span style={{ color: 'var(--text-main)', fontWeight: 500, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>{opt}</span>
                     </button>
                   ))}
                 </div>
@@ -346,7 +347,7 @@ export default function QuizMode() {
 
       {/* Mode 2: Question Generator */}
       {activeTab === 'generator' && (
-        <div className="glass-card" style={{ padding: 28 }}>
+        <div className="glass-card" style={{ padding: 20 }}>
           <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileQuestion size={20} className="text-primary" /> Automatic Question Paper Generator
           </h3>
@@ -399,7 +400,7 @@ export default function QuizMode() {
             </div>
           </div>
 
-          <button className="btn btn-primary" onClick={handleGenerateQuestions} disabled={loading} style={{ marginBottom: 24 }}>
+          <button className="btn btn-primary" onClick={handleGenerateQuestions} disabled={loading} style={{ marginBottom: 24, width: '100%', justifyContent: 'center' }}>
             {loading ? <Sparkles className="spin" size={16} /> : <FileQuestion size={16} />}
             <span>Generate Question Set</span>
           </button>
@@ -407,9 +408,9 @@ export default function QuizMode() {
           {loading && <LoadingSpinner variant="bar" message="Generating questions from syllabus notes..." />}
 
           {generatedText && (
-            <div className="glass-card animate-fade-in" style={{ padding: 24 }}>
-              <h4 style={{ marginBottom: 16 }}>Generated Question Paper</h4>
-              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{generatedText}</div>
+            <div className="glass-card animate-fade-in" style={{ padding: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+              <h4 style={{ marginBottom: 14 }}>Generated Question Paper</h4>
+              <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontSize: '0.92rem' }}>{generatedText}</div>
             </div>
           )}
         </div>

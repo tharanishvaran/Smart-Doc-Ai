@@ -4,12 +4,11 @@ import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { 
   Search, 
-  CheckSquare, 
-  FileText, 
   Sparkles, 
+  FileText, 
+  CheckSquare, 
   TrendingUp, 
   AlertTriangle, 
-  Layers, 
   ListChecks,
   ArrowRight
 } from 'lucide-react';
