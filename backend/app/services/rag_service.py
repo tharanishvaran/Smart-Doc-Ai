@@ -223,11 +223,24 @@ class RAGService:
         db.session.add(assistant_msg)
         db.session.flush()
         
-        # Store source citations
+        # Store source citations safely (validate document_id exists to satisfy foreign key)
+        from app.models.document import Document
+        valid_doc_ids = set()
+        if sources:
+            raw_doc_ids = [s.get('document_id') for s in sources if s.get('document_id')]
+            if raw_doc_ids:
+                try:
+                    existing_docs = Document.query.filter(Document.id.in_(raw_doc_ids)).all()
+                    valid_doc_ids = {d.id for d in existing_docs}
+                except Exception:
+                    valid_doc_ids = set()
+
         for source in sources:
+            doc_id = source.get('document_id')
+            safe_doc_id = doc_id if doc_id in valid_doc_ids else None
             msg_source = MessageSource(
                 message_id=assistant_msg.id,
-                document_id=source.get('document_id'),
+                document_id=safe_doc_id,
                 page_number=source.get('page_number'),
                 chunk_id=source.get('chunk_id'),
                 relevance_score=source.get('relevance_score'),
