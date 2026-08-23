@@ -25,7 +25,10 @@ export default function QuestionAnalysis() {
 
   useEffect(() => {
     documentService.getAll()
-      .then(res => setDocuments(res.data.data.documents.filter(d => d.upload_status === 'completed')))
+      .then(res => {
+        const allDocs = res.data.data.documents || [];
+        setDocuments(allDocs.filter(d => ['indexed', 'completed'].includes(d.upload_status?.toLowerCase())));
+      })
       .catch(() => setError('Failed to retrieve document repository.'))
       .finally(() => setLoading(false));
   }, []);

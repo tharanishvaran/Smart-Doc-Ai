@@ -19,7 +19,10 @@ def get_dashboard():
     user_id = int(get_jwt_identity())
 
     total_documents = Document.query.filter_by(user_id=user_id).count()
-    completed_documents = Document.query.filter_by(user_id=user_id, upload_status='completed').count()
+    completed_documents = Document.query.filter(
+        Document.user_id == user_id,
+        Document.upload_status.in_(['INDEXED', 'completed', 'indexed', 'COMPLETED'])
+    ).count()
     total_categories = Category.query.count()
     total_sessions = ChatSession.query.filter_by(user_id=user_id).count()
 
@@ -43,8 +46,8 @@ def get_dashboard():
     from sqlalchemy import func
     category_stats = (
         db.session.query(Category.name, func.count(Document.id))
-        .outerjoin(Document, (Document.category_id == Category.id) & (Document.user_id == user_id))
-        .group_by(Category.id, Category.name)
+        .outerjoin(Document, Document.category_id == Category.id)
+        .group_by(Category.name)
         .all()
     )
 
@@ -79,7 +82,7 @@ def analyze_question_papers():
     documents = Document.query.filter(
         Document.id.in_(document_ids),
         Document.user_id == user_id,
-        Document.upload_status == 'completed',
+        Document.upload_status.in_(['INDEXED', 'completed', 'indexed', 'COMPLETED'])
     ).all()
 
     if not documents:

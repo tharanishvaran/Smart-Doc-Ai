@@ -158,9 +158,10 @@ export default function Chat() {
       documentService.getAll(),
       categoryService.getAll(),
     ]).then(([sessRes, docRes, catRes]) => {
-      setSessions(sessRes.data.data.sessions);
-      setDocuments(docRes.data.data.documents.filter(d => d.upload_status === 'completed'));
-      setCategories(catRes.data.data.categories);
+      setSessions(sessRes.data.data.sessions || []);
+      const allDocs = docRes.data.data.documents || [];
+      setDocuments(allDocs.filter(d => ['indexed', 'completed'].includes(d.upload_status?.toLowerCase())));
+      setCategories(catRes.data.data.categories || []);
     });
   }, []);
 

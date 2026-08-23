@@ -276,8 +276,8 @@ export default function Dashboard() {
                         <span className="badge badge-primary">{doc.category_name}</span>
                       )}
                       <span className={`badge ${
-                        doc.upload_status === 'completed' ? 'badge-success' : 
-                        doc.upload_status === 'failed' ? 'badge-danger' : 'badge-warning'
+                        ['indexed', 'completed'].includes(doc.upload_status?.toLowerCase()) ? 'badge-success' : 
+                        doc.upload_status?.toLowerCase() === 'failed' ? 'badge-danger' : 'badge-warning'
                       }`}>
                         {doc.upload_status}
                       </span>
