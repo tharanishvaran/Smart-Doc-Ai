@@ -9,15 +9,22 @@ logger = logging.getLogger(__name__)
 _model_instance = None
 
 
-def _get_api_key() -> str:
-    """Helper to get Gemini API key from Flask config or environment."""
+def _get_api_keys() -> list[str]:
+    """Helper to get list of Gemini API keys from Flask config or environment."""
+    raw = ''
     try:
-        key = current_app.config.get('GEMINI_API_KEY')
-        if key:
-            return key
+        raw = current_app.config.get('GEMINI_API_KEY', '')
     except Exception:
         pass
-    return os.getenv('GEMINI_API_KEY', '')
+    if not raw:
+        raw = os.getenv('GEMINI_API_KEY', '')
+    return [k.strip(' "\'\r\n\t') for k in raw.split(',') if k.strip(' "\'\r\n\t')]
+
+
+def _get_api_key() -> str:
+    """Helper to get first working Gemini API key."""
+    keys = _get_api_keys()
+    return keys[0] if keys else ''
 
 
 def _get_local_model():

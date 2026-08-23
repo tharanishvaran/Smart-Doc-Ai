@@ -97,9 +97,10 @@ class RAGService:
             context = self._build_context(deduplicated)
         
         # Step 4: Generate answer with Gemini (if API key present) or Ollama
-        use_gemini = bool(current_app.config.get('GEMINI_API_KEY'))
+        use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         
         answer = None
+        gemini_error = None
         if use_gemini:
             try:
                 logger.info(f'Sending {len(deduplicated)} chunks to Google Gemini API as context...')
@@ -111,15 +112,18 @@ class RAGService:
                     history=history
                 )
             except Exception as e:
+                gemini_error = str(e)
                 logger.warning(f'Gemini API error ({e}), falling back to Ollama...')
         
         if not answer:
-            logger.info(f'Sending {len(deduplicated)} chunks to Ollama as context...')
+            logger.info(f'Attempting fallback to Ollama...')
             try:
                 answer = self.ollama_service.generate_answer(context, question)
             except Exception as e:
                 logger.warning(f'Ollama API error: {e}')
-                raise RuntimeError("Failed to generate answer from Gemini API or local AI models. Please verify GEMINI_API_KEY is set in Render environment variables.")
+                if gemini_error:
+                    raise RuntimeError(f"Gemini API error: {gemini_error}")
+                raise RuntimeError("AI model unavailable. Please ensure GEMINI_API_KEY is configured in your Render environment variables.")
         
         import re
         if answer:

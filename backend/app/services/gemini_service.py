@@ -37,14 +37,26 @@ class GeminiService:
         """
         Generate an answer using Google Gemini REST API given context, question, mode, and language.
         """
-        api_key = current_app.config.get('GEMINI_API_KEY')
-        if not api_key:
-            raise ValueError('GEMINI_API_KEY is not configured.')
+        raw_api_key = current_app.config.get('GEMINI_API_KEY') or os.getenv('GEMINI_API_KEY', '')
+        if not raw_api_key:
+            raise ValueError('GEMINI_API_KEY is not configured in Render environment variables.')
+
+        # Support single or multiple comma-separated keys (e.g. key1, key2, key3)
+        api_keys = [k.strip(' "\'\r\n\t') for k in raw_api_key.split(',') if k.strip(' "\'\r\n\t')]
+        if not api_keys:
+            raise ValueError('Valid GEMINI_API_KEY not found.')
 
         preferred_model = current_app.config.get('GEMINI_MODEL', 'gemini-3.5-flash-lite')
         max_tokens = current_app.config.get('GEMINI_MAX_TOKENS', 4096)
-        # Models verified available via ListModels API
-        candidate_models = [preferred_model, 'gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.6-flash']
+        
+        candidate_models = [
+            preferred_model, 
+            'gemini-3.5-flash-lite', 
+            'gemini-3.5-flash', 
+            'gemini-2.5-flash', 
+            'gemini-1.5-flash',
+            'gemini-3.6-flash'
+        ]
         
         # Deduplicate while preserving order
         models_to_try = []
@@ -102,27 +114,34 @@ ANSWER:"""
         }
 
         last_error = None
-        for model_name in models_to_try:
-            url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}'
-            try:
-                logger.info(f'Trying Gemini model ({model_name})...')
-                response = requests.post(url, json=payload, timeout=30)
-                if response.status_code == 200:
-                    data = response.json()
-                    candidates = data.get('candidates', [])
-                    if candidates and 'content' in candidates[0]:
-                        parts = candidates[0]['content'].get('parts', [])
-                        text_parts = [p['text'] for p in parts if 'text' in p and p['text'].strip()]
-                        if text_parts:
-                            answer = "\n".join(text_parts).strip()
-                            logger.info(f'Gemini model ({model_name}) responded successfully!')
-                            return answer
-                else:
-                    logger.warning(f'Gemini model ({model_name}) status {response.status_code}: {response.text[:150]}')
-                    last_error = f'HTTP {response.status_code}: {response.text[:150]}'
-            except Exception as e:
-                logger.warning(f'Gemini model ({model_name}) error: {e}')
-                last_error = str(e)
+        # Try each API key in rotation
+        for key_idx, active_key in enumerate(api_keys):
+            for model_name in models_to_try:
+                url = f'https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={active_key}'
+                try:
+                    logger.info(f'Trying Gemini model ({model_name}) with API Key #{key_idx + 1}...')
+                    response = requests.post(url, json=payload, timeout=30)
+                    if response.status_code == 200:
+                        data = response.json()
+                        candidates = data.get('candidates', [])
+                        if candidates and 'content' in candidates[0]:
+                            parts = candidates[0]['content'].get('parts', [])
+                            text_parts = [p['text'] for p in parts if 'text' in p and p['text'].strip()]
+                            if text_parts:
+                                answer = "\n".join(text_parts).strip()
+                                logger.info(f'Gemini model ({model_name}) responded successfully!')
+                                return answer
+                    elif response.status_code in (429, 403, 400):
+                        logger.warning(f'Gemini API Key #{key_idx + 1} ({model_name}) status {response.status_code}: {response.text[:120]}')
+                        last_error = f'Key #{key_idx + 1} error: {response.text[:120]}'
+                        # If rate limited (429) or invalid key (400/403), break to next key
+                        break
+                    else:
+                        logger.warning(f'Gemini model ({model_name}) status {response.status_code}: {response.text[:120]}')
+                        last_error = f'HTTP {response.status_code}: {response.text[:120]}'
+                except Exception as e:
+                    logger.warning(f'Gemini model ({model_name}) error: {e}')
+                    last_error = str(e)
 
-        raise RuntimeError(f'All Gemini models failed. Last error: {last_error}')
+        raise RuntimeError(f'All Gemini API keys/models failed. Last error: {last_error}')
 
