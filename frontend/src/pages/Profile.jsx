@@ -230,22 +230,30 @@ export default function Profile() {
                 onClick={() => changeTheme(t.id)}
                 className="glass-card"
                 style={{
-                  padding: 14,
+                  padding: '12px 14px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 8,
+                  gap: 10,
                   textAlign: 'left',
+                  alignItems: 'stretch',
                   cursor: 'pointer',
+                  fontFamily: 'inherit',
                   borderColor: theme === t.id ? 'var(--primary)' : 'var(--border)',
-                  background: theme === t.id ? 'var(--primary-subtle)' : 'var(--bg-surface)'
+                  borderWidth: theme === t.id ? 2 : 1,
+                  borderStyle: 'solid',
+                  background: theme === t.id ? 'var(--primary-subtle)' : 'var(--bg-surface)',
+                  width: '100%',
+                  boxSizing: 'border-box'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '1.2rem' }}>{t.icon}</span>
-                  {theme === t.id && <Check size={16} style={{ color: 'var(--primary)' }} />}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <span style={{ fontSize: '1.25rem', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>{t.icon}</span>
+                  {theme === t.id && <Check size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text-main)' }}>{t.name}</div>
-                <div style={{ width: '100%', height: 4, borderRadius: 2, background: t.color }} />
+                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)', textAlign: 'left', lineHeight: 1.3, whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', minHeight: 22, display: 'flex', alignItems: 'center' }}>
+                  {t.name}
+                </div>
+                <div style={{ width: '100%', height: 4, borderRadius: 2, background: t.color, marginTop: 'auto' }} />
               </button>
             ))}
           </div>

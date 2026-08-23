@@ -75,20 +75,32 @@
 }
 
 .theme-switcher-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 7px 12px;
   border-radius: var(--radius-md);
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
 }
 
 .theme-name {
   font-size: 0.82rem;
   font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  text-align: left;
 }
 
 .chevron {
   transition: transform var(--transition-fast);
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 .chevron.open {
   transform: rotate(180deg);
@@ -99,20 +111,25 @@
   top: calc(100% + 8px);
   right: 0;
   width: 210px;
+  max-width: calc(100vw - 24px);
   padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   z-index: 200;
   animation: fadeInUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-active);
 }
 
 .dropdown-header {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   color: var(--text-dim);
   padding: 6px 10px 4px;
+  text-align: left;
+  text-transform: uppercase;
 }
 
 .theme-option {
@@ -120,14 +137,18 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   font-size: 0.86rem;
   font-weight: 500;
+  font-family: inherit;
   transition: all var(--transition-fast);
   background: transparent;
+  border: none;
   cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
 }
 
 .theme-option:hover {
@@ -142,18 +163,31 @@
 }
 
 .theme-icon {
-  font-size: 1rem;
+  font-size: 1.05rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .theme-label {
   flex: 1;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .theme-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Icon Buttons */
@@ -252,9 +286,15 @@
     height: 34px;
     border-radius: 50%;
     justify-content: center;
+    align-items: center;
+    display: inline-flex;
   }
   .theme-name, .chevron {
     display: none;
+  }
+  .theme-dropdown-menu {
+    right: 0;
+    width: 200px;
   }
   .navbar-user-pill {
     padding: 0;
