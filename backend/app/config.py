@@ -32,13 +32,15 @@ class Config:
         'pool_recycle': 300,
         'pool_pre_ping': True,
     }
+    connect_args = {'connect_timeout': 3} if _raw_db_url.startswith('mysql') else {}
     if _raw_db_url.startswith('mysql') and ('tidb' in _raw_db_url.lower() or 'ssl' in _raw_db_url.lower() or 'aws' in _raw_db_url.lower()):
         import ssl
         try:
-            _ssl_ctx = ssl.create_default_context()
-            _engine_options['connect_args'] = {'ssl': _ssl_ctx}
+            connect_args['ssl'] = ssl.create_default_context()
         except Exception:
             pass
+    if connect_args:
+        _engine_options['connect_args'] = connect_args
 
     SQLALCHEMY_ENGINE_OPTIONS = _engine_options
     
