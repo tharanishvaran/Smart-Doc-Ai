@@ -60,6 +60,14 @@ def create_app():
     app.register_blueprint(exam_prep_bp, url_prefix='/api/exam-prep')
     app.register_blueprint(quiz_bp, url_prefix='/api/quiz')
 
+    @app.route('/', methods=['GET', 'HEAD'])
+    def root_health():
+        return {'status': 'online', 'service': 'SmartDoc AI Backend', 'version': '2.1', 'docs': '/api'}
+
+    @app.route('/api/health', methods=['GET'])
+    def api_health():
+        return {'status': 'healthy', 'rag_engine': 'ready'}
+
 
     # Register global error handlers
     register_error_handlers(app)
