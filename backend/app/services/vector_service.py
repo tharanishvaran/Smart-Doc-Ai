@@ -125,18 +125,24 @@ class VectorService:
         metadatas = []
 
         for i, chunk in enumerate(chunks):
-            chunk_id = chunk.get('chunk_id') or str(uuid.uuid4())
+            meta_src = chunk.get('metadata', {}) if isinstance(chunk.get('metadata'), dict) else {}
+            chunk_id = chunk.get('chunk_id') or meta_src.get('chunk_id') or str(uuid.uuid4())
             ids.append(chunk_id)
             documents.append(chunk['text'])
+            
+            raw_user_id = meta_src.get('user_id') if meta_src.get('user_id') is not None else chunk.get('user_id', 0)
+            raw_doc_id = meta_src.get('document_id') if meta_src.get('document_id') is not None else chunk.get('document_id', 0)
+            raw_cat_id = meta_src.get('category_id') if meta_src.get('category_id') is not None else chunk.get('category_id', 0)
+
             meta = {
-                'user_id': int(chunk.get('user_id', 0)),
-                'document_id': int(chunk.get('document_id', 0)),
-                'category_id': int(chunk.get('category_id', 0)) if chunk.get('category_id') is not None else 0,
-                'chunk_index': int(chunk.get('chunk_index', i)),
-                'page_number': int(chunk.get('page_number', 1)),
-                'filename': str(chunk.get('filename', '')),
-                'file_type': str(chunk.get('file_type', '')),
-                'section': str(chunk.get('section', '')),
+                'user_id': int(raw_user_id or 0),
+                'document_id': int(raw_doc_id or 0),
+                'category_id': int(raw_cat_id or 0),
+                'chunk_index': int(meta_src.get('chunk_index', i)),
+                'page_number': int(meta_src.get('page_number', 1)),
+                'filename': str(meta_src.get('filename') or chunk.get('filename') or ''),
+                'file_type': str(meta_src.get('file_type') or chunk.get('file_type') or ''),
+                'section': str(meta_src.get('section') or chunk.get('section') or ''),
             }
             metadatas.append(meta)
 

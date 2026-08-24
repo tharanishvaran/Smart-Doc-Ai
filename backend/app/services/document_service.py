@@ -126,8 +126,16 @@ class DocumentService:
                 doc.processing_progress = 5
                 db.session.commit()
 
+                # Resolve physical file path safely
+                from app.services.storage_service import get_storage_service
+                storage_service = get_storage_service()
+                file_path = doc.file_path
+                if not (file_path and os.path.exists(file_path)):
+                    file_path = storage_service.get_file_path(doc.stored_filename)
+
                 # Extract text
-                pages = self.doc_processor.extract_text(doc.file_path)
+                pages = self.doc_processor.extract_text(file_path)
+                doc.total_pages = max((p.get('page_number', 1) for p in pages), default=1)
                 doc.processing_progress = 25
                 db.session.commit()
 

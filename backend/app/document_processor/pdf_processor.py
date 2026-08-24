@@ -23,45 +23,61 @@ class PDFProcessor:
         total_pages = len(doc)
         total_chars = 0
         
-        # 1. Fast Native PyMuPDF Text Extraction Loop (< 0.05s)
         for page_num in range(total_pages):
             page = doc[page_num]
             raw_text = page.get_text()
             cleaned = PDFProcessor._clean_text(raw_text)
             
-            if cleaned.strip():
+            # Extract structured markdown tables if present in digital PDF
+            table_md_parts = []
+            try:
+                tabs = page.find_tables()
+                if tabs and hasattr(tabs, 'tables') and tabs.tables:
+                    for tab in tabs.tables:
+                        df = tab.extract()
+                        if df and len(df) >= 1:
+                            header = [str(c or '').strip() for c in df[0]]
+                            if any(header):
+                                md_lines = ["\n| " + " | ".join(header) + " |"]
+                                md_lines.append("| " + " | ".join("---" for _ in header) + " |")
+                                for r in df[1:]:
+                                    row_vals = [str(c or '').strip() for c in r]
+                                    md_lines.append("| " + " | ".join(row_vals) + " |")
+                                table_md_parts.append("\n".join(md_lines) + "\n")
+            except Exception:
+                pass
+
+            combined_page_text = cleaned
+            if table_md_parts:
+                combined_page_text = (cleaned + "\n\n" + "\n\n".join(table_md_parts)).strip()
+
+            # If page has very little or zero digital text (e.g. scanned image / photo / roster), perform high-accuracy Vision OCR
+            if len(combined_page_text.strip()) < 40:
+                logger.info(f"Page {page_num + 1} of {file_path} has minimal digital text ({len(combined_page_text)} chars). Running Vision OCR...")
+                try:
+                    from app.services.ocr_service import OCRService
+                    pix = page.get_pixmap(dpi=150)
+                    png_bytes = pix.tobytes("png")
+                    ocr_text = OCRService.extract_text_from_image_bytes(png_bytes, 'image/png')
+                    if ocr_text and ocr_text.strip():
+                        combined_page_text = ocr_text.strip()
+                        logger.info(f"Page {page_num + 1} Vision OCR extracted {len(combined_page_text)} characters!")
+                except Exception as e:
+                    logger.warning(f"Failed OCR on Page {page_num + 1} of {file_path}: {e}")
+
+            if combined_page_text.strip():
                 pages.append({
                     'page_number': page_num + 1,
                     'section': f'Page {page_num + 1}',
-                    'text': cleaned,
+                    'text': combined_page_text,
                     'file_type': 'pdf'
                 })
-                total_chars += len(cleaned)
-        
-        # 2. OCR Fallback ONLY if zero digital text characters were found across entire PDF
-        if total_chars == 0 and total_pages > 0:
-            logger.info(f"PDF {file_path} has 0 digital text characters. Attempting OCR on page 1...")
-            try:
-                from app.services.ocr_service import OCRService
-                page = doc[0]
-                pix = page.get_pixmap(dpi=120)
-                png_bytes = pix.tobytes("png")
-                ocr_text = OCRService.extract_text_from_image_bytes(png_bytes, 'image/png')
-                if ocr_text and ocr_text.strip():
-                    pages.append({
-                        'page_number': 1,
-                        'section': 'Page 1 (OCR)',
-                        'text': ocr_text.strip(),
-                        'file_type': 'pdf'
-                    })
-                    total_chars += len(ocr_text)
-            except Exception as e:
-                logger.warning(f"Failed OCR on PDF {file_path}: {e}")
+                total_chars += len(combined_page_text)
         
         doc.close()
         
         if total_chars == 0:
-            raise ValueError("PDF appears to be empty or contains no extractable text.")
+            raise ValueError("PDF appears to be empty or contains no extractable text. Please ensure the document is clear and readable.")
             
         logger.info(f"Extracted {total_chars} chars across {len(pages)} pages from {file_path}")
         return pages
