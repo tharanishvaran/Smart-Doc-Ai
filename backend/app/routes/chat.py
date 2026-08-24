@@ -140,8 +140,10 @@ def ask():
 
     question = data.get('question', '').strip()
     session_id = data.get('session_id')
-    document_id = data.get('document_id')
-    category_id = data.get('category_id')
+    raw_doc_id = data.get('document_id')
+    raw_cat_id = data.get('category_id')
+    document_id = int(raw_doc_id) if raw_doc_id and str(raw_doc_id).isdigit() and int(raw_doc_id) > 0 else None
+    category_id = int(raw_cat_id) if raw_cat_id and str(raw_cat_id).isdigit() and int(raw_cat_id) > 0 else None
     explanation_mode = data.get('explanation_mode', 'normal')
     language = data.get('language', 'English')
 

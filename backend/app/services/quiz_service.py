@@ -23,7 +23,7 @@ class QuizService:
     def _get_context(self, user_id: int, topic: str, category_id: int = None) -> str:
         try:
             emb = self.embedding_service.embed_query(topic)
-            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id)
+            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id, query_text=topic)
             if not results:
                 return "No specific document context found."
             return "\n\n---\n\n".join([f"[Source: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results])

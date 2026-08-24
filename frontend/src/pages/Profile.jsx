@@ -33,6 +33,9 @@ export default function Profile() {
       setRawImageSrc(e.target.result);
       setShowAdjustModal(true);
     };
+    reader.onerror = () => {
+      setMsg({ text: 'Failed to read image file from device.', type: 'error' });
+    };
     reader.readAsDataURL(file);
   };
 
@@ -44,26 +47,31 @@ export default function Profile() {
       // 1. Try sending as File object via FormData
       const resBlob = await fetch(croppedDataUrl);
       const blob = await resBlob.blob();
-      const file = new File([blob], 'avatar.png', { type: 'image/png' });
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
 
       const formData = new FormData();
       formData.append('avatar', file);
 
       const res = await authService.uploadAvatar(formData);
-      const updatedUser = res.data.data.user;
-      updateUser(updatedUser);
+      const updatedUser = res.data?.data?.user;
+      if (updatedUser) {
+        updateUser(updatedUser);
+      }
       setMsg({ text: 'Profile picture frame adjusted & saved successfully!', type: 'success' });
       setShowAdjustModal(false);
     } catch (err) {
-      console.warn("FormData crop upload failed, trying base64 JSON payload...", err);
+      console.warn("FormData crop upload notice, trying base64 JSON fallback...", err);
       try {
         const res = await authService.uploadAvatar({ avatar_url: croppedDataUrl });
-        const updatedUser = res.data.data.user;
-        updateUser(updatedUser);
+        const updatedUser = res.data?.data?.user;
+        if (updatedUser) {
+          updateUser(updatedUser);
+        }
         setMsg({ text: 'Profile picture frame adjusted & saved successfully!', type: 'success' });
         setShowAdjustModal(false);
       } catch (fallbackErr) {
-        setMsg({ text: fallbackErr.response?.data?.error || err.response?.data?.error || 'Failed to save profile picture frame.', type: 'error' });
+        const errorMsg = fallbackErr.response?.data?.error || err.response?.data?.error || 'Failed to save profile picture frame.';
+        setMsg({ text: errorMsg, type: 'error' });
       }
     } finally {
       setUploading(false);
@@ -140,7 +148,7 @@ export default function Profile() {
               <input 
                 ref={fileRef} 
                 type="file" 
-                accept="image/png,image/jpeg,image/webp,image/jpg" 
+                accept="image/*" 
                 hidden 
                 onChange={e => {
                   if (e.target.files?.[0]) handleFileSelected(e.target.files[0]);

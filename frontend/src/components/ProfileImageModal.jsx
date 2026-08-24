@@ -72,6 +72,28 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
 
   const handleMouseUp = () => setIsDragging(false);
 
+  // Touch handlers for mobile / smartphone support
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      setIsDragging(true);
+      const touch = e.touches[0];
+      setDragStart({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    if (e.touches && e.touches[0]) {
+      const touch = e.touches[0];
+      setOffset({
+        x: touch.clientX - dragStart.x,
+        y: touch.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleTouchEnd = () => setIsDragging(false);
+
   const handleSaveCropped = () => {
     if (!imageSrc) return;
     const outputCanvas = document.createElement('canvas');
@@ -108,7 +130,13 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
 
       ctx.drawImage(img, x, y, drawWidth, drawHeight);
 
-      const dataUrl = outputCanvas.toDataURL('image/png', 0.95);
+      // Export as high-quality, lightweight WebP or JPEG dataUrl
+      let dataUrl;
+      try {
+        dataUrl = outputCanvas.toDataURL('image/jpeg', 0.90);
+      } catch {
+        dataUrl = outputCanvas.toDataURL('image/png');
+      }
       onSave(dataUrl);
     };
   };
@@ -146,15 +174,26 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
           Drag image to position inside circle and use slider to adjust frame zoom scale.
         </p>
 
-        {/* Canvas Circular Frame */}
+        {/* Canvas Circular Frame with Mouse + Touch Drag Support */}
         <div 
-          style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, cursor: isDragging ? 'grabbing' : 'grab' }}
+          style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            marginBottom: 20, 
+            cursor: isDragging ? 'grabbing' : 'grab',
+            touchAction: 'none',
+            userSelect: 'none'
+          }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
         >
-          <canvas ref={canvasRef} width={250} height={250} style={{ borderRadius: '50%', boxShadow: '0 0 25px var(--primary-glow)', maxWidth: '100%' }} />
+          <canvas ref={canvasRef} width={250} height={250} style={{ borderRadius: '50%', boxShadow: '0 0 25px var(--primary-glow)', maxWidth: '100%', touchAction: 'none' }} />
         </div>
 
         {/* Zoom Controls */}

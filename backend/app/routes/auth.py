@@ -103,25 +103,49 @@ def upload_avatar():
         file = request.files['avatar']
         if file and file.filename != '':
             try:
+                import io
                 import base64
+                from PIL import Image
+
                 image_bytes = file.read()
                 if not image_bytes:
                     return error_response('Uploaded avatar file is empty.', 400)
 
-                encoded = base64.b64encode(image_bytes).decode('utf-8')
-                mime = file.mimetype or 'image/png'
-                user.avatar_url = f"data:{mime};base64,{encoded}"
+                # Open with Pillow to validate and compress
+                try:
+                    img = Image.open(io.BytesIO(image_bytes))
+                    if img.mode in ('RGBA', 'LA', 'P'):
+                        # Keep RGBA for transparency
+                        img = img.convert('RGBA')
+                        out_buffer = io.BytesIO()
+                        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+                        img.save(out_buffer, format='PNG', optimize=True)
+                        encoded = base64.b64encode(out_buffer.getvalue()).decode('utf-8')
+                        user.avatar_url = f"data:image/png;base64,{encoded}"
+                    else:
+                        img = img.convert('RGB')
+                        out_buffer = io.BytesIO()
+                        img.thumbnail((400, 400), Image.Resampling.LANCZOS)
+                        img.save(out_buffer, format='JPEG', quality=90, optimize=True)
+                        encoded = base64.b64encode(out_buffer.getvalue()).decode('utf-8')
+                        user.avatar_url = f"data:image/jpeg;base64,{encoded}"
+                except Exception:
+                    # Fallback to direct base64 encoding if Pillow fails
+                    encoded = base64.b64encode(image_bytes).decode('utf-8')
+                    mime = file.mimetype or 'image/jpeg'
+                    user.avatar_url = f"data:{mime};base64,{encoded}"
+
                 db.session.commit()
                 return success_response(data={'user': user.to_dict()}, message='Avatar updated successfully.')
             except Exception as e:
                 db.session.rollback()
                 return error_response(f'Failed to process avatar image: {str(e)}', 500)
 
-    # 2. Handle base64 string or URL JSON payload (silent=True avoids 400 on form-data)
+    # 2. Handle base64 string or URL JSON payload
     data = request.get_json(silent=True) or {}
     avatar_url = data.get('avatar_url')
-    if avatar_url:
-        user.avatar_url = avatar_url
+    if avatar_url and isinstance(avatar_url, str) and avatar_url.strip():
+        user.avatar_url = avatar_url.strip()
         db.session.commit()
         return success_response(data={'user': user.to_dict()}, message='Avatar updated successfully.')
 

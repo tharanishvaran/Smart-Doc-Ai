@@ -21,7 +21,7 @@ class ExamPrepService:
     def _get_context(self, user_id: int, query: str = "syllabus questions exam units", category_id: int = None) -> str:
         try:
             emb = self.embedding_service.embed_query(query)
-            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id)
+            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id, query_text=query)
             if not results:
                 return "No document context uploaded."
             chunks = [f"[Document: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results]

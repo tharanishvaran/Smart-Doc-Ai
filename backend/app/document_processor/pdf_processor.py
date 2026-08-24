@@ -70,8 +70,21 @@ class PDFProcessor:
     def _clean_text(text: str) -> str:
         if not text:
             return ""
+        # Normalize line endings
         text = text.replace('\r\n', '\n').replace('\r', '\n')
+        # Remove null and control bytes
+        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
+        # Fix hyphenated words broken across line breaks (e.g. "comput-\ner" -> "computer")
+        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
+        # Collapse 3+ newlines to double newline
         text = re.sub(r'\n{3,}', '\n\n', text)
-        lines = [line.strip() for line in text.split('\n')]
-        text = '\n'.join(lines)
-        return re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text).strip()
+        
+        # Merge soft line breaks within paragraphs while preserving paragraph breaks
+        paragraphs = text.split('\n\n')
+        cleaned_paras = []
+        for p in paragraphs:
+            lines = [l.strip() for l in p.split('\n') if l.strip()]
+            if lines:
+                cleaned_paras.append(' '.join(lines))
+        
+        return '\n\n'.join(cleaned_paras).strip()

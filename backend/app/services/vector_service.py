@@ -54,8 +54,67 @@ def _cosine_similarity(vec1: list[float], vec2: list[float]) -> float:
     return max(0.0, min(1.0, dot / (mag1 * mag2)))
 
 
+def _tokenize(text: str) -> list[str]:
+    import re
+    return [w for w in re.findall(r'[a-zA-Z0-9_\u0900-\u0DFF]+', text.lower()) if len(w) > 1]
+
+
+def _bm25_scores(query: str, corpus: list[str]) -> list[float]:
+    """Compute normalized BM25 scores for a query across a list of chunk texts."""
+    if not query or not corpus:
+        return [0.0] * len(corpus)
+
+    query_tokens = _tokenize(query)
+    if not query_tokens:
+        return [0.0] * len(corpus)
+
+    doc_tokens = [_tokenize(doc) for doc in corpus]
+    doc_lens = [len(dt) for dt in doc_tokens]
+    avg_len = sum(doc_lens) / max(1, len(corpus))
+    if avg_len == 0:
+        return [0.0] * len(corpus)
+
+    N = len(corpus)
+    k1 = 1.5
+    b = 0.75
+
+    # Document frequency per query term
+    df = {}
+    for t in set(query_tokens):
+        df[t] = sum(1 for dt in doc_tokens if t in dt)
+
+    scores = []
+    for dt, dlen in zip(doc_tokens, doc_lens):
+        score = 0.0
+        # Term frequencies in this document
+        tf_dict = {}
+        for t in dt:
+            tf_dict[t] = tf_dict.get(t, 0) + 1
+
+        for qt in query_tokens:
+            if qt not in df or df[qt] == 0:
+                continue
+            # Smoothed IDF
+            idf = math.log((N - df[qt] + 0.5) / (df[qt] + 0.5) + 1.0)
+            tf = tf_dict.get(qt, 0)
+            tf_weight = (tf * (k1 + 1.0)) / (tf + k1 * (1.0 - b + b * (dlen / avg_len)))
+            score += idf * tf_weight
+
+        # Bonus for exact phrase or substring match
+        query_clean = query.strip().lower()
+        if len(query_clean) > 3 and query_clean in ' '.join(dt):
+            score += 2.0
+
+        scores.append(score)
+
+    max_score = max(scores) if scores else 0.0
+    if max_score > 0:
+        return [s / max_score for s in scores]
+    return [0.0] * len(corpus)
+
+
 class VectorService:
-    """Ultra-fast, zero-crash pure Python vector store with 100% cloud compatibility."""
+    """Ultra-fast, zero-crash pure Python vector store with hybrid BM25 + dense semantic search."""
 
     def add_chunks(self, chunks: list[dict], embeddings: list[list[float]]) -> list[str]:
         if not chunks or not embeddings:
@@ -105,48 +164,88 @@ class VectorService:
 
     def query(
         self,
-        query_embedding: list[float],
-        user_id: int,
-        n_results: int = 6,
+        query_embedding: list[float] = None,
+        user_id: int = 0,
+        n_results: int = 8,
         document_id: int = None,
         category_id: int = None,
+        query_text: str = None,
     ) -> list[dict]:
-        """Search for relevant chunks using cosine similarity in 0.001 seconds."""
+        """
+        Search for relevant chunks using Hybrid Search:
+        Dense Semantic Cosine Similarity + Sparse Lexical BM25 Keyword Scoring.
+        """
         store = _load_store()
-        chunks = store.get('chunks', [])
-        if not chunks:
+        all_chunks = store.get('chunks', [])
+        if not all_chunks:
             return []
 
-        scored = []
-        for item in chunks:
+        # Filter candidates matching user and optional document/category constraints
+        candidate_items = []
+        for item in all_chunks:
             meta = item.get('metadata', {})
-            if meta.get('user_id') != user_id:
+            item_user_id = int(meta.get('user_id', 0))
+            if user_id and item_user_id != int(user_id):
                 continue
-            if document_id is not None and meta.get('document_id') != document_id:
+            if document_id is not None and int(document_id) > 0 and int(meta.get('document_id', 0)) != int(document_id):
                 continue
-            if category_id is not None and meta.get('category_id') != category_id:
+            if category_id is not None and int(category_id) > 0 and int(meta.get('category_id', 0)) != int(category_id):
                 continue
+            candidate_items.append(item)
 
-            sim = _cosine_similarity(query_embedding, item.get('embedding', []))
+        if not candidate_items:
+            return []
+
+        # 1. Compute BM25 Lexical Keyword Scores
+        corpus_texts = [item['text'] for item in candidate_items]
+        bm25_scores = _bm25_scores(query_text, corpus_texts) if query_text else [0.0] * len(candidate_items)
+
+        # 2. Compute Semantic Cosine Similarity Scores
+        scored = []
+        for idx, item in enumerate(candidate_items):
+            meta = item.get('metadata', {})
+            dense_sim = 0.0
+            if query_embedding:
+                dense_sim = _cosine_similarity(query_embedding, item.get('embedding', []))
+
+            lexical_sim = bm25_scores[idx]
+
+            # Weighted Hybrid Score: 0.55 semantic + 0.45 BM25
+            if query_text and query_embedding:
+                hybrid_score = (0.55 * dense_sim) + (0.45 * lexical_sim)
+            elif query_text:
+                hybrid_score = lexical_sim
+            else:
+                hybrid_score = dense_sim
+
             scored.append({
                 'chunk_id': item['id'],
                 'text': item['text'],
                 'metadata': meta,
-                'relevance_score': sim,
+                'relevance_score': hybrid_score,
+                'dense_score': dense_sim,
+                'bm25_score': lexical_sim,
             })
 
-        # Sort by similarity descending
+        # Sort by relevance score descending
         scored.sort(key=lambda x: x['relevance_score'], reverse=True)
         return scored[:n_results]
 
     def delete_document_chunks(self, user_id: int, document_id: int):
         store = _load_store()
-        store['chunks'] = [c for c in store.get('chunks', []) if not (c.get('metadata', {}).get('user_id') == user_id and c.get('metadata', {}).get('document_id') == document_id)]
+        store['chunks'] = [
+            c for c in store.get('chunks', []) 
+            if not (int(c.get('metadata', {}).get('user_id', 0)) == int(user_id) and int(c.get('metadata', {}).get('document_id', 0)) == int(document_id))
+        ]
         _save_store(store)
+
+    def delete_by_document(self, document_id: int, user_id: int):
+        """Alias for delete_document_chunks."""
+        self.delete_document_chunks(user_id=user_id, document_id=document_id)
 
     def delete_user_chunks(self, user_id: int):
         store = _load_store()
-        store['chunks'] = [c for c in store.get('chunks', []) if c.get('metadata', {}).get('user_id') != user_id]
+        store['chunks'] = [c for c in store.get('chunks', []) if int(c.get('metadata', {}).get('user_id', 0)) != int(user_id)]
         _save_store(store)
 
     def get_stats(self) -> dict:

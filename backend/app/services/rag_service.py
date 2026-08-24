@@ -45,7 +45,7 @@ class RAGService:
                 'message_id': int,
             }
         """
-        top_k = current_app.config.get('RAG_TOP_K', 5)
+        top_k = current_app.config.get('RAG_TOP_K', 8)
         
         # Fetch session history if not explicitly provided
         if history is None and session_id:
@@ -78,14 +78,15 @@ class RAGService:
         logger.info(f'Embedding question: "{question[:80]}..." (mode={explanation_mode}, lang={language})')
         query_embedding = self.embedding_service.embed_query(question)
         
-        # Step 2: Search ChromaDB for relevant chunks (user-scoped)
-        logger.info(f'Searching vector store (user={user_id}, doc={document_id}, cat={category_id})')
+        # Step 2: Search Vector store with Hybrid Search (dense embeddings + BM25 keyword matching)
+        logger.info(f'Searching vector store with hybrid search (user={user_id}, doc={document_id}, cat={category_id})')
         raw_results = self.vector_service.query(
             query_embedding=query_embedding,
             user_id=user_id,
-            n_results=top_k,
+            n_results=max(8, top_k),
             document_id=document_id,
             category_id=category_id,
+            query_text=question,
         )
         
         if not raw_results:
@@ -97,6 +98,7 @@ class RAGService:
             context = self._build_context(deduplicated)
         
         # Step 4: Generate answer with Gemini (if API key present) or Ollama
+        import os
         use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         
         answer = None
@@ -146,16 +148,26 @@ class RAGService:
 
     
     def _deduplicate_chunks(self, results: list[dict]) -> list[dict]:
-        """Remove highly similar/duplicate chunks based on text similarity."""
-        seen_texts = set()
+        """Remove duplicate chunks based on chunk_id or full normalized text hash."""
+        import hashlib
+        seen_ids = set()
+        seen_hashes = set()
         unique = []
         
         for result in results:
-            # Simple deduplication: skip if text starts with same 100 chars
-            text_key = result['text'][:100].strip()
-            if text_key not in seen_texts:
-                seen_texts.add(text_key)
-                unique.append(result)
+            chunk_id = result.get('chunk_id')
+            if chunk_id and chunk_id in seen_ids:
+                continue
+
+            text_norm = ' '.join(result['text'].split())
+            text_hash = hashlib.md5(text_norm.encode('utf-8')).hexdigest()
+            if text_hash in seen_hashes:
+                continue
+
+            if chunk_id:
+                seen_ids.add(chunk_id)
+            seen_hashes.add(text_hash)
+            unique.append(result)
         
         return unique
     

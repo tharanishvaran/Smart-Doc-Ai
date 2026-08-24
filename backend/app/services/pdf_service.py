@@ -73,21 +73,25 @@ class PDFService:
     
     @staticmethod
     def _clean_text(text: str) -> str:
-        """Clean extracted text — remove excessive whitespace, fix common OCR artifacts."""
+        """Clean extracted text — remove excessive whitespace, fix linebreaks and hyphenations."""
         if not text:
             return ''
         
         # Normalize line endings
         text = text.replace('\r\n', '\n').replace('\r', '\n')
-        
-        # Remove excessive blank lines (keep max 2 consecutive newlines)
+        # Remove null bytes and control chars
+        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
+        # Fix hyphenated words broken across line breaks
+        text = re.sub(r'(\w+)-\n(\w+)', r'\1\2', text)
+        # Collapse 3+ newlines to double newline
         text = re.sub(r'\n{3,}', '\n\n', text)
         
-        # Remove leading/trailing whitespace per line
-        lines = [line.strip() for line in text.split('\n')]
-        text = '\n'.join(lines)
+        # Merge soft line breaks within paragraphs
+        paragraphs = text.split('\n\n')
+        cleaned_paras = []
+        for p in paragraphs:
+            lines = [l.strip() for l in p.split('\n') if l.strip()]
+            if lines:
+                cleaned_paras.append(' '.join(lines))
         
-        # Remove null bytes and other control chars
-        text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', text)
-        
-        return text.strip()
+        return '\n\n'.join(cleaned_paras).strip()

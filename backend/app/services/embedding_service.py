@@ -30,38 +30,58 @@ def _get_api_key() -> str:
 
 
 
-def _hash_embedding(text: str, dim: int = 768) -> list[float]:
-    """Lightweight deterministic fallback vector generator if no API key or local model exists."""
+def _term_embedding(text: str, dim: int = 768) -> list[float]:
+    """
+    Deterministic sub-word & token term-frequency vector generator (fallback).
+    Ensures that shared words and n-grams yield real, measurable cosine similarity.
+    """
+    if not text:
+        return [0.0] * dim
+    import re
+    import math
     import hashlib
-    vec = []
-    text_bytes = text.encode('utf-8')
-    for i in range(dim):
-        h = hashlib.sha256(text_bytes + i.to_bytes(4, 'big')).digest()
-        val = (int.from_bytes(h[:4], 'big') / (2**32 - 1)) * 2.0 - 1.0
-        vec.append(val)
-    # Simple L2 normalization
-    norm = sum(x*x for x in vec) ** 0.5 or 1.0
-    return [x / norm for x in vec]
+
+    vec = [0.0] * dim
+    words = re.findall(r'[a-zA-Z0-9_\u0900-\u0DFF]+', text.lower())
+    if not words:
+        return [0.0] * dim
+
+    for w in words:
+        # Exact word hash
+        h = int(hashlib.md5(w.encode('utf-8')).hexdigest()[:8], 16) % dim
+        vec[h] += 2.0
+        # Character 3-grams for typo & stem tolerance
+        if len(w) >= 3:
+            for i in range(len(w) - 2):
+                ngram = w[i:i+3]
+                nh = int(hashlib.md5(ngram.encode('utf-8')).hexdigest()[:8], 16) % dim
+                vec[nh] += 0.5
+
+    # L2 normalize
+    mag = math.sqrt(sum(x * x for x in vec))
+    if mag == 0:
+        return [0.0] * dim
+    return [x / mag for x in vec]
 
 
 class EmbeddingService:
-    """Generates text embeddings using Gemini REST API (zero RAM overhead) with fallbacks."""
+    """Generates text embeddings using Gemini REST API (zero RAM overhead) with intelligent fallbacks."""
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a list of document chunks."""
         if not texts:
             return []
 
-        api_key = _get_api_key()
-        if api_key:
+        api_keys = _get_api_keys()
+        for api_key in api_keys:
             try:
                 return self._embed_batch_gemini(texts, api_key)
             except Exception as e:
-                logger.warning(f'Gemini embedding API failed ({e}), falling back...')
+                logger.warning(f'Gemini embedding API key failed ({e}), trying next key or fallback...')
 
-        # Instant deterministic hash embedding fallback (0.001s execution)
-        logger.info(f'Generating fast hash embeddings for {len(texts)} chunks...')
-        return [_hash_embedding(t) for t in texts]
+        # High-accuracy deterministic term-frequency vector fallback
+        logger.info(f'Generating fast term-frequency embeddings for {len(texts)} chunks...')
+        return [_term_embedding(t) for t in texts]
 
     def embed_documents_batch(self, texts: list[str], batch_size: int = 32, progress_callback=None) -> list[list[float]]:
         """Generate embeddings in configurable batches with progress updates."""
@@ -87,19 +107,19 @@ class EmbeddingService:
         if not query:
             return [0.0] * 768
 
-        api_key = _get_api_key()
-        if api_key:
+        api_keys = _get_api_keys()
+        for api_key in api_keys:
             try:
                 return self._embed_single_gemini(query, api_key)
             except Exception as e:
-                logger.warning(f'Gemini query embedding failed ({e}), falling back to hash...')
+                logger.warning(f'Gemini query embedding failed ({e}), trying next...')
 
-        # Instant deterministic hash embedding fallback (0.001s, no downloads)
-        return _hash_embedding(query)
+        # High-accuracy deterministic term-frequency vector fallback
+        return _term_embedding(query)
 
     def _embed_single_gemini(self, text: str, api_key: str) -> list[float]:
-        """Call Gemini REST API for a single text embedding."""
-        models_to_try = ['gemini-embedding-001', 'gemini-embedding-2']
+        """Call Gemini REST API for a single text embedding using official text-embedding models."""
+        models_to_try = ['text-embedding-004', 'embedding-001', 'gemini-embedding-001']
         last_err = None
         for m in models_to_try:
             url = f'https://generativelanguage.googleapis.com/v1beta/models/{m}:embedContent?key={api_key}'
@@ -111,7 +131,9 @@ class EmbeddingService:
                 res = requests.post(url, json=payload, timeout=8)
                 if res.status_code == 200:
                     data = res.json()
-                    return data.get('embedding', {}).get('values', [])
+                    values = data.get('embedding', {}).get('values', [])
+                    if values:
+                        return values
                 last_err = f'HTTP {res.status_code}: {res.text[:150]}'
             except Exception as e:
                 last_err = str(e)
@@ -119,7 +141,7 @@ class EmbeddingService:
 
     def _embed_batch_gemini(self, texts: list[str], api_key: str) -> list[list[float]]:
         """Call Gemini REST API in batches of up to 50 items."""
-        models_to_try = ['gemini-embedding-001', 'gemini-embedding-2']
+        models_to_try = ['text-embedding-004', 'embedding-001', 'gemini-embedding-001']
         last_err = None
         for m in models_to_try:
             url = f'https://generativelanguage.googleapis.com/v1beta/models/{m}:batchEmbedContents?key={api_key}'
