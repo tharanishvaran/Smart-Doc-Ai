@@ -16,6 +16,10 @@ class Config:
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'fallback-jwt-secret')
     JWT_ACCESS_TOKEN_EXPIRES = 86400  # 24 hours in seconds
     
+    # Google OAuth
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+    GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+    
     # Database
     _raw_db_url = os.getenv('DATABASE_URL', '')
     if _raw_db_url.startswith('postgres://'):
@@ -27,22 +31,31 @@ class Config:
     
     SQLALCHEMY_DATABASE_URI = _raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    _engine_options = {
-        'pool_recycle': 300,
-        'pool_pre_ping': True,
-    }
-    connect_args = {'connect_timeout': 3} if _raw_db_url.startswith('mysql') else {}
-    if _raw_db_url.startswith('mysql') and ('tidb' in _raw_db_url.lower() or 'ssl' in _raw_db_url.lower() or 'aws' in _raw_db_url.lower()):
-        import ssl
-        try:
-            connect_args['ssl'] = ssl.create_default_context()
-        except Exception:
-            pass
-    if connect_args:
-        _engine_options['connect_args'] = connect_args
 
-    SQLALCHEMY_ENGINE_OPTIONS = _engine_options
+    # SQLite: allow multi-threaded access (required for Flask dev server & Gunicorn)
+    # For MySQL/PostgreSQL the connect_args block is skipped automatically
+    if _raw_db_url.startswith('sqlite'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {'check_same_thread': False},
+        }
+    elif _raw_db_url.startswith('mysql'):
+        import ssl as _ssl
+        _connect_args = {'connect_timeout': 3}
+        if 'tidb' in _raw_db_url.lower() or 'ssl' in _raw_db_url.lower() or 'aws' in _raw_db_url.lower():
+            try:
+                _connect_args['ssl'] = _ssl.create_default_context()
+            except Exception:
+                pass
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_recycle': 300,
+            'pool_pre_ping': True,
+            'connect_args': _connect_args,
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_recycle': 300,
+            'pool_pre_ping': True,
+        }
     
     # File Uploads
     UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
@@ -69,7 +82,7 @@ class Config:
     
     # Gemini API
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.5-flash-lite')
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.1-flash-lite')
     GEMINI_MAX_TOKENS = int(os.getenv('GEMINI_MAX_TOKENS', 4096))
 
     # Ollama

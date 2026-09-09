@@ -13,6 +13,7 @@ import {
   Award
 } from 'lucide-react';
 import './Sidebar.css';
+import UserAvatar from './UserAvatar';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -92,17 +93,12 @@ export default function Sidebar({ isOpen, onClose }) {
               style={{ cursor: 'pointer' }}
               title="Click to view profile photo"
             >
-              {user.avatar_url ? (
-                <img 
-                  src={user.avatar_url} 
-                  alt={user.name} 
-                  style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary)' }}
-                />
-              ) : (
-                <div className="sidebar-avatar">
-                  {user.name?.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar 
+                user={user} 
+                size={38} 
+                border="2px solid var(--primary)"
+                className="sidebar-avatar"
+              />
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">{user.name}</div>
                 <div className="sidebar-user-role">{user.role || 'Student'}</div>

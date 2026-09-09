@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -126,6 +127,12 @@ export default function Login() {
             )}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <GoogleLoginButton text="signin_with" onError={(err) => setError(err)} />
 
         <div className="auth-footer" style={{ marginTop: 24, textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
           Don't have an account? <Link to="/register" style={{ fontWeight: 600 }}>Create one free</Link>

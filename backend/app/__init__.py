@@ -86,25 +86,57 @@ def create_app():
 
 
 def _migrate_db():
-    """Ensure missing columns like avatar_url and document progress fields exist."""
-    from sqlalchemy import text
-    try:
-        db.session.execute(text("ALTER TABLE users ADD COLUMN avatar_url LONGTEXT NULL;"))
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    """Ensure missing columns exist — compatible with both SQLite and MySQL."""
+    from sqlalchemy import text, inspect
 
-    doc_migrations = [
-        "ALTER TABLE documents MODIFY COLUMN upload_status VARCHAR(50) NOT NULL DEFAULT 'uploaded';",
-        "ALTER TABLE documents ADD COLUMN processing_progress INT DEFAULT 0 NOT NULL;",
-        "ALTER TABLE documents ADD COLUMN total_chunks INT DEFAULT 0 NOT NULL;",
-        "ALTER TABLE documents ADD COLUMN error_message TEXT NULL;",
-        "ALTER TABLE documents ADD COLUMN updated_at DATETIME NULL;",
-        "ALTER TABLE documents ADD COLUMN indexed_at DATETIME NULL;",
-    ]
-    for stmt in doc_migrations:
+    db_url = str(db.engine.url)
+    is_sqlite = db_url.startswith('sqlite')
+
+    def column_exists(table: str, column: str) -> bool:
+        """Check whether a column already exists (works for SQLite & MySQL)."""
+        inspector = inspect(db.engine)
+        cols = [c['name'] for c in inspector.get_columns(table)]
+        return column in cols
+
+    def safe_add_column(table: str, column: str, definition: str):
+        """Add a column only if it doesn't already exist."""
+        if not column_exists(table, column):
+            try:
+                db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {definition}"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+    # --- users table ---
+    safe_add_column('users', 'avatar_url', 'TEXT NULL')
+    safe_add_column('users', 'google_id', 'VARCHAR(100) NULL')
+    safe_add_column('users', 'auth_provider', "VARCHAR(50) NOT NULL DEFAULT 'local'")
+
+    # MODIFY COLUMN is MySQL-only; SQLite handles nullable via model definition at create_all()
+    if not is_sqlite:
+        for stmt in [
+            "ALTER TABLE users MODIFY COLUMN password_hash VARCHAR(255) NULL;",
+            "ALTER TABLE documents MODIFY COLUMN upload_status VARCHAR(50) NOT NULL DEFAULT 'uploaded';",
+        ]:
+            try:
+                db.session.execute(text(stmt))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+    # --- documents table ---
+    safe_add_column('documents', 'processing_progress', 'INT NOT NULL DEFAULT 0')
+    safe_add_column('documents', 'total_chunks', 'INT NOT NULL DEFAULT 0')
+    safe_add_column('documents', 'error_message', 'TEXT NULL')
+    safe_add_column('documents', 'updated_at', 'DATETIME NULL')
+    safe_add_column('documents', 'indexed_at', 'DATETIME NULL')
+
+    # Enable WAL journal mode for SQLite (better concurrent read performance)
+    if is_sqlite:
         try:
-            db.session.execute(text(stmt))
+            db.session.execute(text('PRAGMA journal_mode=WAL'))
+            db.session.execute(text('PRAGMA synchronous=NORMAL'))
+            db.session.execute(text('PRAGMA cache_size=-64000'))  # 64 MB cache
             db.session.commit()
         except Exception:
             db.session.rollback()

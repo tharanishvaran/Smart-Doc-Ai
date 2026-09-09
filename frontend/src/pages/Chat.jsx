@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { chatService } from '../services/chatService';
 import { documentService } from '../services/documentService';
@@ -20,7 +20,8 @@ import {
   Mic,
   MicOff,
   Volume2,
-  Globe
+  Globe,
+  X
 } from 'lucide-react';
 import './Chat.css';
 
@@ -39,7 +40,7 @@ const LANGUAGES = [
   { code: 'Telugu', name: 'Telugu (తెలుగు)' }
 ];
 
-function Message({ msg }) {
+const Message = memo(function Message({ msg }) {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
   const [showSources, setShowSources] = useState(true);
@@ -64,6 +65,28 @@ function Message({ msg }) {
       }
     }
   };
+
+  // If this is an assistant placeholder waiting for the first streaming chunk
+  if (!isUser && msg.streaming && !msg.message) {
+    return (
+      <div className="message-row ai-row">
+        <div className="message-avatar ai-avatar pulse-glow">
+          <Bot size={18} />
+        </div>
+        <div className="message-wrapper">
+          <div className="message-header">
+            <span className="sender-name">SmartDoc RAG AI</span>
+          </div>
+          <div className="message-bubble typing-bubble glass-card">
+            <div className="typing-indicator">
+              <span /><span /><span />
+            </div>
+            <span className="typing-text">Thinking...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`message-row ${isUser ? 'user-row' : 'ai-row'}`}>
@@ -129,7 +152,7 @@ function Message({ msg }) {
       </div>
     </div>
   );
-}
+});
 
 export default function Chat() {
   const { sessionId } = useParams();
@@ -141,6 +164,9 @@ export default function Chat() {
   const [explanationMode, setExplanationMode] = useState('normal');
   const [language, setLanguage] = useState('English');
   const [isListening, setIsListening] = useState(false);
+  const [isVoiceStarting, setIsVoiceStarting] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [audioLevel, setAudioLevel] = useState(0);
   const [loading, setLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -148,8 +174,53 @@ export default function Chat() {
   const [filterDocId, setFilterDocId] = useState('');
   const [filterCatId, setFilterCatId] = useState('');
   const [error, setError] = useState('');
+  const [interimSpeech, setInterimSpeech] = useState('');
   const bottomRef = useRef();
+  const messagesThreadRef = useRef(null);
   const recognitionRef = useRef(null);
+  const isListeningRef = useRef(false);
+  const sessionFinalTranscriptRef = useRef('');
+  const currentInstanceFinalRef = useRef('');
+  const baseQuestionRef = useRef('');
+  const restartTimeoutRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const analyserRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const speechRecognizedRef = useRef(false);
+
+  // Clean up recognition instance, recorder, and audio on component unmount
+  useEffect(() => {
+    return () => {
+      isListeningRef.current = false;
+      if (restartTimeoutRef.current) {
+        clearTimeout(restartTimeoutRef.current);
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        try { mediaRecorderRef.current.stop(); } catch (e) {}
+      }
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(t => {
+          try { t.stop(); } catch (e) {}
+        });
+      }
+      if (audioContextRef.current) {
+        try {
+          if (audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+          }
+        } catch (e) {}
+      }
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (e) {}
+      }
+    };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -164,16 +235,41 @@ export default function Chat() {
     });
   }, []);
 
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  const activeSessionRef = useRef(activeSession);
+  activeSessionRef.current = activeSession;
+  const skipNextLoadSessionRef = useRef(null);
+
   useEffect(() => {
-    if (sessionId) loadSession(parseInt(sessionId));
+    if (!sessionId) {
+      setActiveSession(null);
+      activeSessionRef.current = null;
+      setMessages([]);
+      return;
+    }
+    const id = parseInt(sessionId);
+    if (skipNextLoadSessionRef.current === id) {
+      // Session was just created by sendQuestion or newChat; keep live messages!
+      skipNextLoadSessionRef.current = null;
+      return;
+    }
+    if (activeSessionRef.current?.id === id && (loadingRef.current || messages.length > 0)) {
+      return;
+    }
+    loadSession(id);
   }, [sessionId]);
 
   const loadSession = async (id) => {
+    if (loadingRef.current && activeSessionRef.current?.id === id) {
+      return;
+    }
     setSessionLoading(true);
     try {
       const res = await chatService.getSession(id);
       const session = res.data.data.session;
       setActiveSession(session);
+      activeSessionRef.current = session;
       setMessages(session.messages || []);
     } catch { setError('Failed to load session history.'); }
     finally { setSessionLoading(false); }
@@ -182,8 +278,10 @@ export default function Chat() {
   const newChat = async () => {
     const res = await chatService.createSession('New Conversation');
     const session = res.data.data.session;
+    skipNextLoadSessionRef.current = session.id;
     setSessions(prev => [session, ...prev]);
     setActiveSession(session);
+    activeSessionRef.current = session;
     setMessages([]);
     navigate(`/chat/${session.id}`);
   };
@@ -199,74 +297,377 @@ export default function Chat() {
     }
   };
 
-  const toggleVoiceInput = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please try Google Chrome or Microsoft Edge.");
-      return;
+  const getSpeechLanguage = (lang) => {
+    const l = (lang || '').toLowerCase();
+    if (l === 'tamil' || (l.includes('tamil') && !l.includes('english'))) return 'ta-IN';
+    if (l.includes('tanglish') || (l.includes('tamil') && l.includes('english'))) {
+      return 'en-IN';
     }
+    if (l.includes('hindi')) return 'hi-IN';
+    if (l.includes('telugu')) return 'te-IN';
+    if (l.includes('malayalam')) return 'ml-IN';
+    if (l.includes('kannada')) return 'kn-IN';
+    if (l.includes('spanish')) return 'es-ES';
+    if (l.includes('french')) return 'fr-FR';
+    if (l.includes('german')) return 'de-DE';
+    if (typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('en')) {
+      return navigator.language;
+    }
+    return 'en-IN';
+  };
 
-    if (isListening) {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.stop(); } catch {}
-      }
-      setIsListening(false);
-    } else {
+  const stopAudioAnalyser = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => {
+        try { track.stop(); } catch (e) {}
+      });
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
       try {
-        const recognition = new SpeechRecognition();
-        recognitionRef.current = recognition;
-
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        const langLower = language.toLowerCase();
-        if (langLower.includes('tamil')) {
-          recognition.lang = 'ta-IN';
-        } else if (langLower.includes('hindi')) {
-          recognition.lang = 'hi-IN';
-        } else if (langLower.includes('telugu')) {
-          recognition.lang = 'te-IN';
-        } else {
-          recognition.lang = 'en-US';
+        if (audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
         }
+      } catch (e) {}
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setAudioLevel(0);
+  };
 
-        const initialPrompt = question ? question.trim() + ' ' : '';
+  const startAudioAnalyser = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
 
-        recognition.onstart = () => {
-          setIsListening(true);
-          setError('');
-        };
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const audioCtx = new AudioCtx();
+        audioContextRef.current = audioCtx;
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.4;
+        analyserRef.current = analyser;
 
-        recognition.onresult = (e) => {
-          let currentTranscript = '';
-          for (let i = 0; i < e.results.length; i++) {
-            currentTranscript += e.results[i][0].transcript;
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const checkAudio = () => {
+          if (!isListeningRef.current) return;
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
           }
-          setQuestion(initialPrompt + currentTranscript);
+          const avg = sum / dataArray.length;
+          const level = Math.min(100, Math.round((avg / 128) * 100));
+          setAudioLevel(level);
+          animationFrameRef.current = requestAnimationFrame(checkAudio);
         };
-
-        recognition.onerror = (e) => {
-          if (e.error === 'not-allowed') {
-            setError('Microphone access denied. Please allow microphone permissions in your browser settings.');
-          } else if (e.error !== 'no-speech') {
-            setError(`Voice input notice (${e.error}).`);
-          }
-          setIsListening(false);
-        };
-
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-
-        recognition.start();
-      } catch (err) {
-        setError('Voice assistant initialization failed.');
-        setIsListening(false);
+        animationFrameRef.current = requestAnimationFrame(checkAudio);
       }
+      return true;
+    } catch (err) {
+      console.error('Audio stream / permission error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Microphone access was blocked. Please click the lock or site settings icon in your browser address bar and set Microphone to "Allow".');
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        setError('No microphone found. Please connect a microphone to your device and check Windows sound settings.');
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        setError('Microphone is busy or locked by another application. Please close other voice/video apps and try again.');
+      } else {
+        setError('Could not access microphone: ' + (err.message || 'Check browser permissions.'));
+      }
+      return false;
     }
   };
 
-  const sendQuestion = async (promptText) => {
+  const stopVoiceInput = async (autoSubmit = false) => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setIsVoiceStarting(false);
+    setInterimSpeech('');
+
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+
+    // Stop speech recognition instance
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (err) {}
+      recognitionRef.current = null;
+    }
+
+    const liveTranscript = (sessionFinalTranscriptRef.current + currentInstanceFinalRef.current).trim();
+
+    // Check if we have audio recorded via MediaRecorder
+    const recorder = mediaRecorderRef.current;
+    let recordedBlob = null;
+    if (recorder && recorder.state !== 'inactive') {
+      recordedBlob = await new Promise((resolve) => {
+        recorder.onstop = () => {
+          const chunks = audioChunksRef.current;
+          if (chunks && chunks.length > 0) {
+            const mimeType = chunks[0]?.type || 'audio/webm';
+            resolve(new Blob(chunks, { type: mimeType }));
+          } else {
+            resolve(null);
+          }
+        };
+        try {
+          recorder.stop();
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    stopAudioAnalyser();
+
+    // If Web Speech API captured spoken text, use it immediately
+    if (liveTranscript) {
+      const finalVal = [baseQuestionRef.current.trim(), liveTranscript].filter(Boolean).join(' ');
+      setQuestion(finalVal);
+      sessionFinalTranscriptRef.current = '';
+      currentInstanceFinalRef.current = '';
+      if (autoSubmit) {
+        sendQuestion(finalVal);
+      }
+      return;
+    }
+
+    // If Web Speech API did NOT convert text (the browser issue reported by user),
+    // transcribe the recorded audio using Gemini AI!
+    if (recordedBlob && recordedBlob.size > 1500) {
+      setIsTranscribing(true);
+      try {
+        const reader = new FileReader();
+        const base64Data = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(recordedBlob);
+        });
+
+        if (base64Data) {
+          const res = await chatService.transcribeAudio(base64Data, recordedBlob.type, language);
+          const aiText = res.data?.data?.transcript || '';
+          if (aiText.trim()) {
+            const finalVal = [baseQuestionRef.current.trim(), aiText.trim()].filter(Boolean).join(' ');
+            setQuestion(finalVal);
+            sessionFinalTranscriptRef.current = '';
+            currentInstanceFinalRef.current = '';
+            if (autoSubmit) {
+              sendQuestion(finalVal);
+            }
+            setIsTranscribing(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Gemini audio transcription warning:', err);
+        setError('Could not transcribe audio. Please try speaking clearly or type your question.');
+      } finally {
+        setIsTranscribing(false);
+      }
+    }
+
+    sessionFinalTranscriptRef.current = '';
+    currentInstanceFinalRef.current = '';
+  };
+
+  const cancelVoiceInput = () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    setIsVoiceStarting(false);
+    setIsTranscribing(false);
+    setInterimSpeech('');
+    audioChunksRef.current = [];
+
+    if (restartTimeoutRef.current) {
+      clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch (e) {}
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    stopAudioAnalyser();
+    setQuestion(baseQuestionRef.current.trim());
+    sessionFinalTranscriptRef.current = '';
+    currentInstanceFinalRef.current = '';
+  };
+
+  const initAndStartRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      const targetLang = getSpeechLanguage(language);
+      recognition.lang = targetLang;
+
+      recognition.onstart = () => {
+        setIsVoiceStarting(false);
+        setIsListening(true);
+        setError('');
+      };
+
+      recognition.onresult = (e) => {
+        let instanceFinal = '';
+        let instanceInterim = '';
+        for (let i = 0; i < e.results.length; i++) {
+          const item = e.results[i];
+          const transcript = item[0]?.transcript || '';
+          if (item.isFinal) {
+            instanceFinal += transcript + ' ';
+          } else {
+            instanceInterim += transcript;
+          }
+        }
+        currentInstanceFinalRef.current = instanceFinal;
+        setInterimSpeech(instanceInterim);
+
+        const totalTranscript = (sessionFinalTranscriptRef.current + instanceFinal).trim();
+        const liveText = instanceInterim.trim();
+        const combined = [baseQuestionRef.current.trim(), totalTranscript, liveText].filter(Boolean).join(' ');
+        setQuestion(combined);
+      };
+
+      recognition.onerror = (e) => {
+        console.warn('Speech recognition warning:', e.error);
+        if (e.error === 'not-allowed') {
+          setError('Microphone access blocked. Click the lock/tune icon in your browser address bar to allow microphone access.');
+          stopVoiceInput(false);
+        }
+      };
+
+      recognition.onend = () => {
+        sessionFinalTranscriptRef.current = (sessionFinalTranscriptRef.current + currentInstanceFinalRef.current);
+        currentInstanceFinalRef.current = '';
+        setInterimSpeech('');
+
+        if (isListeningRef.current) {
+          if (restartTimeoutRef.current) clearTimeout(restartTimeoutRef.current);
+          restartTimeoutRef.current = setTimeout(() => {
+            if (isListeningRef.current) {
+              initAndStartRecognition();
+            }
+          }, 150);
+        }
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.warn('SpeechRecognition start failed (will use Gemini audio transcription):', err);
+    }
+  };
+
+  const startVoiceInput = async () => {
+    setError('');
+    setIsVoiceStarting(true);
+    audioChunksRef.current = [];
+
+    // 1. Get mic access and start audio visualizer
+    const micReady = await startAudioAnalyser();
+    if (!micReady) {
+      setIsVoiceStarting(false);
+      return;
+    }
+
+    baseQuestionRef.current = question ? question.trim() + ' ' : '';
+    sessionFinalTranscriptRef.current = '';
+    currentInstanceFinalRef.current = '';
+    setInterimSpeech('');
+    isListeningRef.current = true;
+    setIsListening(true);
+    setIsVoiceStarting(false);
+
+    // 2. Start high-fidelity MediaRecorder
+    try {
+      if (window.MediaRecorder && mediaStreamRef.current) {
+        let options = { mimeType: 'audio/webm;codecs=opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options = { mimeType: 'audio/webm' };
+          if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'audio/mp4' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+              options = undefined;
+            }
+          }
+        }
+        const recorder = options ? new MediaRecorder(mediaStreamRef.current, options) : new MediaRecorder(mediaStreamRef.current);
+        mediaRecorderRef.current = recorder;
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        recorder.start(250);
+      }
+    } catch (e) {
+      console.warn('MediaRecorder init warning:', e);
+    }
+
+    // 3. Attempt Web Speech API for live transcription
+    initAndStartRecognition();
+  };
+
+  const toggleVoiceInput = () => {
+    if (isListening || isVoiceStarting || isTranscribing) {
+      stopVoiceInput(false);
+    } else {
+      startVoiceInput();
+    }
+  };
+
+  const scrollToBottom = useCallback(() => {
+    if (messagesThreadRef.current) {
+      messagesThreadRef.current.scrollTop = messagesThreadRef.current.scrollHeight;
+    }
+  }, []);
+
+  const sendQuestion = useCallback(async (promptText) => {
+    stopVoiceInput();
     const query = promptText || question;
     if (!query.trim() || loading) return;
     setError('');
@@ -275,41 +676,70 @@ export default function Chat() {
     if (!currentSession) {
       const res = await chatService.createSession(query.slice(0, 50));
       currentSession = res.data.data.session;
+      skipNextLoadSessionRef.current = currentSession.id;
       setSessions(prev => [currentSession, ...prev]);
       setActiveSession(currentSession);
-      navigate(`/chat/${currentSession.id}`);
+      activeSessionRef.current = currentSession;
+      navigate(`/chat/${currentSession.id}`, { replace: true });
     }
 
+    // Add user message immediately
     const userMsg = { role: 'user', message: query, id: Date.now() };
-    setMessages(prev => [...prev, userMsg]);
+    // Add empty AI placeholder so the typing indicator shows inline
+    const aiPlaceholderId = Date.now() + 1;
+    const aiPlaceholder = { role: 'assistant', message: '', sources: [], id: aiPlaceholderId, streaming: true };
+    setMessages(prev => [...prev, userMsg, aiPlaceholder]);
     setQuestion('');
     setLoading(true);
+    loadingRef.current = true;
+    requestAnimationFrame(() => scrollToBottom());
 
-    try {
-      const res = await chatService.ask({
+    await chatService.askStream(
+      {
         session_id: currentSession.id,
-        question: userMsg.message,
+        question: query,
         document_id: filterDocId ? parseInt(filterDocId) : null,
         category_id: filterCatId ? parseInt(filterCatId) : null,
         explanation_mode: explanationMode,
         language: language,
-      });
-      const { answer, sources } = res.data.data;
-      const aiMsg = { role: 'assistant', message: answer, sources, id: Date.now() + 1 };
-      setMessages(prev => [...prev, aiMsg]);
-
-      if (currentSession.title === 'New Conversation') {
-        setSessions(prev => prev.map(s =>
-          s.id === currentSession.id ? { ...s, title: userMsg.message.slice(0, 50) } : s
-        ));
+      },
+      {
+        onChunk: (text) => {
+          // Append each token to the streaming placeholder
+          setMessages(prev => prev.map(m =>
+            m.id === aiPlaceholderId
+              ? { ...m, message: m.message + text }
+              : m
+          ));
+          requestAnimationFrame(() => scrollToBottom());
+        },
+        onDone: ({ sources, message_id, session_id }) => {
+          // Finalise: remove streaming flag, attach sources
+          setMessages(prev => prev.map(m =>
+            m.id === aiPlaceholderId
+              ? { ...m, sources: sources || [], streaming: false }
+              : m
+          ));
+          if (currentSession.title === 'New Conversation' || currentSession.title === 'New Chat') {
+            setSessions(prev => prev.map(s =>
+              s.id === currentSession.id ? { ...s, title: query.slice(0, 50) } : s
+            ));
+          }
+          setLoading(false);
+          loadingRef.current = false;
+          requestAnimationFrame(() => scrollToBottom());
+        },
+        onError: (msg) => {
+          setError(msg || 'Failed to generate answer. Please try again.');
+          // Remove the empty placeholder on error
+          setMessages(prev => prev.filter(m => m.id !== aiPlaceholderId));
+          setLoading(false);
+          loadingRef.current = false;
+        },
       }
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to generate answer. Ensure the AI model backend is running.');
-    } finally {
-      setLoading(false);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    }
-  };
+    );
+  }, [activeSession, question, loading, filterDocId, filterCatId, explanationMode, language, scrollToBottom]);
+
 
   return (
     <div className="chat-container animate-fade-in">
@@ -418,7 +848,7 @@ export default function Chat() {
         </div>
 
         {/* Message Thread */}
-        <div className="messages-thread">
+        <div className="messages-thread" ref={messagesThreadRef}>
           {!activeSession && messages.length === 0 && (
             <div className="chat-welcome-hero">
               <div className="welcome-avatar">
@@ -451,33 +881,92 @@ export default function Chat() {
             <Message key={msg.id || i} msg={msg} />
           ))}
 
-          {loading && (
-            <div className="message-row ai-row">
-              <div className="message-avatar ai-avatar pulse-glow">
-                <Bot size={18} />
-              </div>
-              <div className="message-wrapper">
-                <div className="message-bubble glass-card typing-bubble">
-                  <div className="typing-indicator">
-                    <span /><span /><span />
-                  </div>
-                  <span className="typing-text">Analyzing documents and synthesizing answer...</span>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {error && <div className="alert alert-error" style={{ margin: '16px 0' }}>⚠️ {error}</div>}
           <div ref={bottomRef} />
         </div>
 
+        {/* Live Voice Assistant Banner */}
+        {/* Live Voice Assistant Banner */}
+        {(isListening || isVoiceStarting || isTranscribing) && (
+          <div className="voice-listening-bar glass-card animate-fade-in">
+            <div className="voice-bar-left">
+              <div className="voice-waveform" title={`Microphone Volume: ${audioLevel}%`}>
+                <span className="wave-bar bar-1" style={{ height: `${Math.max(6, Math.min(26, 6 + (audioLevel * 0.2)))}px` }} />
+                <span className="wave-bar bar-2" style={{ height: `${Math.max(10, Math.min(30, 10 + (audioLevel * 0.24)))}px` }} />
+                <span className="wave-bar bar-3" style={{ height: `${Math.max(14, Math.min(34, 14 + (audioLevel * 0.28)))}px` }} />
+                <span className="wave-bar bar-4" style={{ height: `${Math.max(10, Math.min(30, 10 + (audioLevel * 0.24)))}px` }} />
+                <span className="wave-bar bar-5" style={{ height: `${Math.max(6, Math.min(26, 6 + (audioLevel * 0.2)))}px` }} />
+              </div>
+              <div className="voice-status-text">
+                <span className={`voice-pulse-dot ${audioLevel > 15 ? 'active-sound' : ''}`} />
+                <div className="voice-text-column">
+                  <span className="voice-listening-label">
+                    {isTranscribing ? (
+                      <span className="transcribing-text">✨ Transcribing your voice with Gemini AI...</span>
+                    ) : isVoiceStarting ? (
+                      <span>Connecting microphone...</span>
+                    ) : interimSpeech ? (
+                      <span className="interim-text">"{interimSpeech}"</span>
+                    ) : audioLevel > 15 ? (
+                      <span className="sound-detected">Hearing voice... speak clearly</span>
+                    ) : (
+                      <span>Listening... speak in <strong>{language || 'English'}</strong></span>
+                    )}
+                  </span>
+                  {!interimSpeech && !isVoiceStarting && !isTranscribing && (
+                    <span className="voice-subhint">
+                      {audioLevel > 15 ? 'Voice detected — click "Done" when finished' : 'Mic active — start speaking to transcribe'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="voice-bar-actions">
+              <button 
+                type="button"
+                className="btn btn-secondary btn-sm voice-action-btn"
+                onClick={() => stopVoiceInput(false)}
+                disabled={isTranscribing}
+                title="Finish speaking and enter text into chatbox"
+              >
+                <Check size={14} />
+                <span>Done</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary btn-sm voice-action-btn"
+                onClick={() => stopVoiceInput(true)}
+                disabled={isTranscribing}
+                title="Submit voice question to AI directly"
+              >
+                <Send size={14} />
+                <span>Ask AI</span>
+              </button>
+
+              <button 
+                type="button"
+                className="btn-icon voice-cancel-btn"
+                onClick={cancelVoiceInput}
+                disabled={isTranscribing}
+                title="Cancel voice input"
+              >
+                <X size={15} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Input Box */}
         <form className="chat-input-form" onSubmit={(e) => { e.preventDefault(); sendQuestion(); }}>
           <button
             type="button"
-            className={`btn btn-secondary ${isListening ? 'mic-btn-active' : ''}`}
+            className={`btn btn-secondary ${isListening ? 'mic-btn-active' : ''} ${isVoiceStarting || isTranscribing ? 'mic-btn-starting' : ''}`}
             onClick={toggleVoiceInput}
-            title={isListening ? "Listening... Click to stop" : "Ask by Voice"}
+            title={isTranscribing ? "Transcribing voice with AI..." : isListening ? "Listening... Click to stop" : isVoiceStarting ? "Starting microphone..." : "Ask by Voice"}
             style={{ padding: '0 12px' }}
           >
             {isListening ? <MicOff size={18} /> : <Mic size={18} />}
@@ -485,10 +974,10 @@ export default function Chat() {
 
           <input
             className="input chat-input-field"
-            placeholder={isListening ? "Listening to your voice..." : "Type your question or speak..."}
+            placeholder={isTranscribing ? "Transcribing your voice with Gemini AI..." : isListening ? "Listening to your voice... (words appear here)" : "Type your question or speak..."}
             value={question}
             onChange={e => setQuestion(e.target.value)}
-            disabled={loading}
+            disabled={loading || isTranscribing}
           />
 
           <button 

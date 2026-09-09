@@ -28,8 +28,12 @@ __pycache__/
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/chroma_db/
+backend/instance/
+instance/
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
 
 # IDE & OS Files
 .vscode/

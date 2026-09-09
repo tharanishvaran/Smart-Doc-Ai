@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from flask import current_app
@@ -21,7 +22,7 @@ class ExamPrepService:
     def _get_context(self, user_id: int, query: str = "syllabus questions exam units", category_id: int = None) -> str:
         try:
             emb = self.embedding_service.embed_query(query)
-            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id, query_text=query)
+            results = self.vector_service.query(emb, user_id, n_results=4, category_id=category_id, query_text=query)
             if not results:
                 return "No document context uploaded."
             chunks = [f"[Document: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results]
@@ -30,10 +31,10 @@ class ExamPrepService:
             logger.warning(f"Error fetching context for exam prep: {e}")
             return "General Knowledge Mode"
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str, is_json: bool = False) -> str:
         use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            return self.gemini_service.generate_answer(context="", question=prompt)
+            return self.gemini_service.generate_raw(prompt=prompt, max_tokens=1500, is_json=is_json)
         return self.ollama_service.generate_answer(context="", question=prompt)
 
     def _clean_and_parse_json(self, raw: str) -> dict:
@@ -86,7 +87,7 @@ Respond ONLY in valid JSON format matching this structure:
   ],
   "recommendation": "Focus heavily on core weightage topics and solve past papers during final revision."
 }}"""
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, is_json=True)
         try:
             return self._clean_and_parse_json(raw)
         except Exception as e:
@@ -121,7 +122,7 @@ Respond ONLY in valid JSON format:
     {{ "topic": "Introductory {subject} Basics", "reason": "Basic 2-mark definitions & history", "weightage": "Low" }}
   ]
 }}"""
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, is_json=True)
         try:
             return self._clean_and_parse_json(raw)
         except Exception as e:

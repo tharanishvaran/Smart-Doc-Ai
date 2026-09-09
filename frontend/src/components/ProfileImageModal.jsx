@@ -49,7 +49,7 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
       ctx.restore();
 
       // Outer ring guide overlay
-      ctx.strokeStyle = '#00f2fe';
+      ctx.strokeStyle = '#F95700';
       ctx.lineWidth = 4;
       ctx.beginPath();
       ctx.arc(125, 125, 120, 0, Math.PI * 2, true);

@@ -1,29 +1,21 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export const THEMES = [
-  { id: 'dark-cyber', name: 'Dark Cyber', icon: '🌌', type: 'dark', color: '#00f2fe' },
-  { id: 'electric-violet', name: 'Electric Violet', icon: '🟣', type: 'dark', color: '#d946ef' },
-  { id: 'emerald-tech', name: 'Emerald Tech', icon: '🌿', type: 'dark', color: '#10b981' },
-  { id: 'light-luxury', name: 'Executive Light', icon: '☀️', type: 'light', color: '#6366f1' },
+  { id: 'pondy-techfix', name: 'PondyTechFix Cyber', icon: '🔥', type: 'dark', color: '#F95700' },
 ];
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('smartdoc_theme') || 'dark-cyber';
-  });
+  const theme = 'pondy-techfix';
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('smartdoc_theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'pondy-techfix');
+    document.documentElement.classList.add('dark');
+    localStorage.setItem('smartdoc_theme', 'pondy-techfix');
+  }, []);
 
-  const changeTheme = (newTheme) => {
-    if (THEMES.some(t => t.id === newTheme)) {
-      setTheme(newTheme);
-    }
-  };
+  const changeTheme = () => {};
 
   return (
     <ThemeContext.Provider value={{ theme, changeTheme, themes: THEMES }}>

@@ -48,7 +48,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 242, 254, 0.3);
+  border: 1px solid var(--border-active);
 }
 
 .upload-text-content h4 {
@@ -235,7 +235,7 @@
 .filter-chip.active {
   background: var(--primary-subtle);
   color: var(--primary);
-  border-color: rgba(0, 242, 254, 0.4);
+  border-color: var(--border-active);
 }
 
 /* Document Grid */
@@ -268,7 +268,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border: 1px solid var(--border-active);
 }
 
 .doc-card-title {

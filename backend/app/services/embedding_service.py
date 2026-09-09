@@ -1,16 +1,24 @@
 import os
 import logging
 import requests
+from functools import lru_cache
 from flask import current_app
 
 logger = logging.getLogger(__name__)
+
+# In-process embedding cache — avoids repeat Gemini API calls for same question
+_embedding_cache: dict = {}
+_CACHE_MAX = 256  # max unique query embeddings to keep in RAM
 
 # Singleton — lazy loaded once if local SentenceTransformer fallback is used
 _model_instance = None
 
 
+_emb_key_cursor: int = 0
+
 def _get_api_keys() -> list[str]:
-    """Helper to get list of Gemini API keys from Flask config or environment."""
+    """Helper to get list of Gemini API keys from Flask config or environment, rotated round-robin."""
+    global _emb_key_cursor
     raw = ''
     try:
         raw = current_app.config.get('GEMINI_API_KEY', '')
@@ -18,7 +26,13 @@ def _get_api_keys() -> list[str]:
         pass
     if not raw:
         raw = os.getenv('GEMINI_API_KEY', '')
-    return [k.strip(' "\'\r\n\t') for k in raw.split(',') if k.strip(' "\'\r\n\t')]
+    keys = [k.strip(' "\'\r\n\t') for k in raw.split(',') if k.strip(' "\'\r\n\t')]
+    if not keys:
+        return []
+    n = len(keys)
+    start = _emb_key_cursor % n
+    _emb_key_cursor = (_emb_key_cursor + 1) % n
+    return [keys[(start + i) % n] for i in range(n)]
 
 
 def _get_api_key() -> str:
@@ -103,23 +117,39 @@ class EmbeddingService:
         return all_embeddings
 
     def embed_query(self, query: str) -> list[float]:
-        """Generate an embedding for a single query string."""
+        """Generate an embedding for a single query string — cached in process."""
         if not query:
             return [0.0] * 768
 
+        # Cache lookup — avoids Gemini API call for repeated questions (~1-2s savings)
+        cache_key = query.strip().lower()[:500]
+        if cache_key in _embedding_cache:
+            logger.debug('Embedding cache hit.')
+            return _embedding_cache[cache_key]
+
         api_keys = _get_api_keys()
+        result = None
         for api_key in api_keys:
             try:
-                return self._embed_single_gemini(query, api_key)
+                result = self._embed_single_gemini(query, api_key)
+                break
             except Exception as e:
                 logger.warning(f'Gemini query embedding failed ({e}), trying next...')
 
-        # High-accuracy deterministic term-frequency vector fallback
-        return _term_embedding(query)
+        if result is None:
+            # Fast deterministic fallback
+            result = _term_embedding(query)
+
+        # Store in cache (evict oldest if full)
+        if len(_embedding_cache) >= _CACHE_MAX:
+            oldest_key = next(iter(_embedding_cache))
+            del _embedding_cache[oldest_key]
+        _embedding_cache[cache_key] = result
+        return result
 
     def _embed_single_gemini(self, text: str, api_key: str) -> list[float]:
         """Call Gemini REST API for a single text embedding using official text-embedding models."""
-        models_to_try = ['text-embedding-004', 'embedding-001', 'gemini-embedding-001']
+        models_to_try = ['gemini-embedding-001', 'gemini-embedding-2']
         last_err = None
         for m in models_to_try:
             url = f'https://generativelanguage.googleapis.com/v1beta/models/{m}:embedContent?key={api_key}'
@@ -128,7 +158,7 @@ class EmbeddingService:
                 'content': {'parts': [{'text': text[:2000]}]}
             }
             try:
-                res = requests.post(url, json=payload, timeout=8)
+                res = requests.post(url, json=payload, timeout=5)  # 5s — fail fast to fallback
                 if res.status_code == 200:
                     data = res.json()
                     values = data.get('embedding', {}).get('values', [])
@@ -141,7 +171,7 @@ class EmbeddingService:
 
     def _embed_batch_gemini(self, texts: list[str], api_key: str) -> list[list[float]]:
         """Call Gemini REST API in batches of up to 50 items."""
-        models_to_try = ['text-embedding-004', 'embedding-001', 'gemini-embedding-001']
+        models_to_try = ['gemini-embedding-001', 'gemini-embedding-2']
         last_err = None
         for m in models_to_try:
             url = f'https://generativelanguage.googleapis.com/v1beta/models/{m}:batchEmbedContents?key={api_key}'

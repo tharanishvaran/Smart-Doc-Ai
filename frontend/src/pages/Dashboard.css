@@ -28,7 +28,7 @@
   border-radius: 999px;
   background: var(--primary-subtle);
   color: var(--primary);
-  border: 1px solid rgba(0, 242, 254, 0.3);
+  border: 1px solid var(--border-active);
   font-size: 0.78rem;
   font-weight: 700;
   margin-bottom: 16px;
@@ -99,24 +99,25 @@
 .primary-glow-icon {
   background: var(--primary-subtle);
   color: var(--primary);
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border: 1px solid var(--border-active);
 }
 
 .accent-glow-icon {
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--accent);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(251, 146, 60, 0.15);
+  color: #FB923C;
+  border: 1px solid rgba(251, 146, 60, 0.3);
 }
 
 .purple-glow-icon {
-  background: rgba(217, 70, 239, 0.15);
-  color: #d946ef;
-  border: 1px solid rgba(217, 70, 239, 0.2);
+  background: rgba(234, 88, 12, 0.15);
+  color: #EA580C;
+  border: 1px solid rgba(234, 88, 12, 0.3);
 }
 
 .white-glow-icon {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .stat-trend {

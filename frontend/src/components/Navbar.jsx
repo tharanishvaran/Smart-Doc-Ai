@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { Palette, Bell, ChevronDown, Menu } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import './Navbar.css';
 
 import { ViewProfileModal } from './ProfileImageModal';
+import UserAvatar from './UserAvatar';
 
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard Overview',
@@ -20,12 +20,9 @@ const PAGE_TITLES = {
 export default function Navbar({ onToggleSidebar }) {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const { theme, changeTheme, themes } = useTheme();
-  const [themeDropdownOpen, setThemeDropdownOpen] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
 
   const title = Object.entries(PAGE_TITLES).find(([path]) => pathname.startsWith(path))?.[1] || 'Smart Doc AI';
-  const currentThemeObj = themes.find(t => t.id === theme) || themes[0];
 
   return (
     <>
@@ -46,37 +43,7 @@ export default function Navbar({ onToggleSidebar }) {
         </div>
 
         <div className="navbar-right">
-          {/* Theme Switcher Dropdown */}
-          <div className="theme-switcher-wrapper">
-            <button 
-              className="theme-switcher-btn btn btn-secondary btn-sm"
-              onClick={() => setThemeDropdownOpen(!themeDropdownOpen)}
-            >
-              <Palette size={15} style={{ color: currentThemeObj.color }} />
-              <span className="theme-name">{currentThemeObj.name}</span>
-              <ChevronDown size={14} className={`chevron ${themeDropdownOpen ? 'open' : ''}`} />
-            </button>
 
-            {themeDropdownOpen && (
-              <div className="theme-dropdown-menu glass-card">
-                <div className="dropdown-header">Select Palette Theme</div>
-                {themes.map(t => (
-                  <button
-                    key={t.id}
-                    className={`theme-option ${theme === t.id ? 'active' : ''}`}
-                    onClick={() => {
-                      changeTheme(t.id);
-                      setThemeDropdownOpen(false);
-                    }}
-                  >
-                    <span className="theme-icon">{t.icon}</span>
-                    <span className="theme-label">{t.name}</span>
-                    <span className="theme-dot" style={{ background: t.color }} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Notifications Mock Bell */}
           <button className="navbar-icon-btn btn btn-ghost btn-sm" title="Notifications">
@@ -86,17 +53,11 @@ export default function Navbar({ onToggleSidebar }) {
 
           {/* User Pill */}
           <div className="navbar-user-pill" onClick={() => setShowViewModal(true)} style={{ cursor: 'pointer' }} title="Click to view profile photo">
-            {user?.avatar_url ? (
-              <img 
-                src={user.avatar_url} 
-                alt={user.name} 
-                style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }}
-              />
-            ) : (
-              <div className="user-pill-avatar">
-                {user?.name?.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <UserAvatar 
+              user={user} 
+              size={28} 
+              className="user-pill-avatar"
+            />
             <span className="user-pill-name">Hello, {user?.name?.split(' ')[0]}</span>
           </div>
         </div>

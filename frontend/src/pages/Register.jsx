@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Sparkles, User, Mail, Lock, ArrowRight } from 'lucide-react';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
@@ -125,6 +126,12 @@ export default function Register() {
             )}
           </button>
         </form>
+
+        <div className="auth-divider">
+          <span>OR</span>
+        </div>
+
+        <GoogleLoginButton text="signup_with" onError={(err) => setError(err)} />
 
         <div className="auth-footer" style={{ marginTop: 24, textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
           Already have an account? <Link to="/login" style={{ fontWeight: 600 }}>Sign in</Link>

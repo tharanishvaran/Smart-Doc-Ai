@@ -73,6 +73,31 @@ def login():
         return error_response('Login failed. Please try again.', 500)
 
 
+@auth_bp.route('/google', methods=['POST'])
+def google_auth():
+    """Authenticate or register user using Google OAuth ID token."""
+    data = request.get_json()
+
+    if not data:
+        return error_response('Request body is required.', 400)
+
+    credential = data.get('credential') or data.get('id_token') or data.get('token')
+    if not credential:
+        return error_response('Google credential token is required.', 400)
+
+    try:
+        user = AuthService.authenticate_or_register_google(credential)
+        access_token = create_access_token(identity=str(user.id))
+        return success_response(
+            data={'user': user.to_dict(), 'access_token': access_token},
+            message='Google authentication successful.',
+        )
+    except ValueError as e:
+        return error_response(str(e), 401)
+    except Exception as e:
+        return error_response('Google authentication failed. Please try again.', 500)
+
+
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def me():

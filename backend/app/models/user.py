@@ -10,9 +10,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=True)
     role = db.Column(db.String(20), nullable=False, default='student')  # student, admin
     avatar_url = db.Column(db.Text, nullable=True)
+    google_id = db.Column(db.String(100), unique=True, nullable=True, index=True)
+    auth_provider = db.Column(db.String(50), nullable=False, default='local')  # local, google
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -27,6 +29,7 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'avatar_url': self.avatar_url,
+            'auth_provider': self.auth_provider,
             'created_at': self.created_at.isoformat(),
         }
 

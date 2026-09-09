@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from flask import current_app
@@ -23,7 +24,7 @@ class QuizService:
     def _get_context(self, user_id: int, topic: str, category_id: int = None) -> str:
         try:
             emb = self.embedding_service.embed_query(topic)
-            results = self.vector_service.query(emb, user_id, n_results=6, category_id=category_id, query_text=topic)
+            results = self.vector_service.query(emb, user_id, n_results=3, category_id=category_id, query_text=topic)
             if not results:
                 return "No specific document context found."
             return "\n\n---\n\n".join([f"[Source: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results])
@@ -31,10 +32,10 @@ class QuizService:
             logger.warning(f"QuizService context lookup failed: {e}")
             return ""
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str, is_json: bool = False) -> str:
         use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            return self.gemini_service.generate_answer(context="", question=prompt)
+            return self.gemini_service.generate_raw(prompt=prompt, max_tokens=1500, is_json=is_json)
         return self.ollama_service.generate_answer(context="", question=prompt)
 
     def generate_questions(self, user_id: int, topic: str, question_type: str, mark_type: str = '5', count: int = 5, category_id: int = None) -> str:
@@ -97,7 +98,7 @@ Respond ONLY in valid JSON format matching:
     }}
   ]
 }}"""
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, is_json=True)
 
         attempt = QuizAttempt(
             user_id=user_id,
@@ -167,7 +168,7 @@ Respond ONLY in valid JSON format matching:
   "explanation": "Detailed explanation of why the answer is correct or incorrect...",
   "weakness_identified": "Identified conceptual gap (or 'None' if correct)"
 }}"""
-        raw = self._call_llm(prompt)
+        raw = self._call_llm(prompt, is_json=True)
         try:
             eval_data = self._clean_and_parse_json(raw)
         except Exception:

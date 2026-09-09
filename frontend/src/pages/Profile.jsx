@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { authService } from '../services/authService';
 import { AdjustFrameModal, ViewProfileModal } from '../components/ProfileImageModal';
+import UserAvatar from '../components/UserAvatar';
 import { 
   User, 
   Mail, 
@@ -95,36 +96,13 @@ export default function Profile() {
               onClick={() => setShowViewModal(true)}
               title="Click to view full profile picture"
             >
-              {user?.avatar_url ? (
-                <img 
-                  src={user.avatar_url} 
-                  alt={user.name} 
-                  style={{
-                    width: 76,
-                    height: 76,
-                    borderRadius: '50%',
-                    objectFit: 'cover',
-                    border: '3px solid var(--primary)',
-                    boxShadow: '0 0 20px var(--primary-glow)'
-                  }}
-                />
-              ) : (
-                <div style={{ 
-                  width: 76, 
-                  height: 76, 
-                  background: 'var(--primary-gradient)', 
-                  borderRadius: '50%', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  fontSize: '2rem', 
-                  color: '#fff', 
-                  fontWeight: 800,
-                  boxShadow: '0 0 20px var(--primary-glow)'
-                }}>
-                  {user?.name?.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <UserAvatar 
+                user={user} 
+                size={76} 
+                fontSize="2rem" 
+                border="3px solid var(--primary)" 
+                boxShadow="0 0 20px var(--primary-glow)" 
+              />
 
               <div 
                 style={{
@@ -224,46 +202,57 @@ export default function Profile() {
         <div className="glass-card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
             <Palette size={20} className="text-primary" />
-            <h3 style={{ margin: 0 }}>Theme & Appearance</h3>
+            <h3 style={{ margin: 0 }}>Active System Theme</h3>
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-            Select a high-contrast theme customized for maximum readability and visual appeal.
+            High-contrast tech theme inspired by PondyTechFix with electric flame accents and deep obsidian glassmorphism.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
-            {themes.map(t => (
-              <button
-                key={t.id}
-                onClick={() => changeTheme(t.id)}
-                className="glass-card"
+          <div 
+            className="glass-card"
+            style={{
+              padding: '16px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              borderColor: 'var(--border-active)',
+              borderWidth: 1,
+              borderStyle: 'solid',
+              background: 'linear-gradient(135deg, rgba(249, 87, 0, 0.08) 0%, rgba(13, 18, 28, 0.95) 100%)',
+              boxShadow: '0 4px 20px rgba(249, 87, 0, 0.1)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div 
                 style={{
-                  padding: '12px 14px',
+                  width: 44,
+                  height: 44,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--primary-gradient)',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                  textAlign: 'left',
-                  alignItems: 'stretch',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  borderColor: theme === t.id ? 'var(--primary)' : 'var(--border)',
-                  borderWidth: theme === t.id ? 2 : 1,
-                  borderStyle: 'solid',
-                  background: theme === t.id ? 'var(--primary-subtle)' : 'var(--bg-surface)',
-                  width: '100%',
-                  boxSizing: 'border-box'
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 15px var(--primary-glow)',
+                  fontSize: '1.3rem'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <span style={{ fontSize: '1.25rem', lineHeight: 1, display: 'inline-flex', alignItems: 'center' }}>{t.icon}</span>
-                  {theme === t.id && <Check size={16} style={{ color: 'var(--primary)', flexShrink: 0 }} />}
+                🔥
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
+                  PondyTechFix Cyber
                 </div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)', textAlign: 'left', lineHeight: 1.3, whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', minHeight: 22, display: 'flex', alignItems: 'center' }}>
-                  {t.name}
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Obsidian #06080D • Flame Orange #F95700
                 </div>
-                <div style={{ width: '100%', height: 4, borderRadius: 2, background: t.color, marginTop: 'auto' }} />
-              </button>
-            ))}
+              </div>
+            </div>
+
+            <span className="badge badge-primary" style={{ padding: '6px 12px', fontSize: '0.78rem' }}>
+              <Check size={14} /> Active
+            </span>
           </div>
 
           {/* Developer Credit & RAG Overview */}

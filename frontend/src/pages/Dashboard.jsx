@@ -21,6 +21,7 @@ import {
 import './Dashboard.css';
 
 import { useAuth } from '../contexts/AuthContext';
+import UserAvatar from '../components/UserAvatar';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -58,13 +59,12 @@ export default function Dashboard() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8, flexWrap: 'wrap' }}>
-            {user?.avatar_url && (
-              <img 
-                src={user.avatar_url} 
-                alt={user.name} 
-                style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--primary)' }}
-              />
-            )}
+            <UserAvatar 
+              user={user} 
+              size={48} 
+              fontSize="1.3rem"
+              border="3px solid var(--primary)" 
+            />
             <h1 style={{ margin: 0 }}>
               Welcome back, <span className="page-title-gradient">{user?.name || 'Student'}</span>
             </h1>

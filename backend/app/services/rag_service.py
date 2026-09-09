@@ -3,7 +3,6 @@ from flask import current_app
 
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_service import VectorService
-from app.services.ollama_service import OllamaService
 from app.services.gemini_service import GeminiService
 from app.models.chat_message import ChatMessage
 from app.models.message_source import MessageSource
@@ -21,7 +20,6 @@ class RAGService:
     def __init__(self):
         self.embedding_service = EmbeddingService()
         self.vector_service = VectorService()
-        self.ollama_service = OllamaService()
         self.gemini_service = GeminiService()
     
     def answer_question(
@@ -49,7 +47,8 @@ class RAGService:
         
         # Fetch session history if not explicitly provided
         if history is None and session_id:
-            past_messages = ChatMessage.query.filter_by(session_id=session_id).order_by(ChatMessage.created_at.asc()).limit(10).all()
+            # Fetch only last 4 messages — less DB I/O + smaller prompt = faster Gemini
+            past_messages = ChatMessage.query.filter_by(session_id=session_id).order_by(ChatMessage.created_at.asc()).limit(4).all()
             history = [{'role': m.role, 'content': m.message} for m in past_messages]
 
         # Fast short-circuit for common conversational greetings (< 0.05s response)
@@ -74,16 +73,12 @@ class RAGService:
                 'message_id': msg_id,
             }
 
-        # Step 1: Embed the question
-        logger.info(f'Embedding question: "{question[:80]}..." (mode={explanation_mode}, lang={language})')
-        query_embedding = self.embedding_service.embed_query(question)
-        
-        # Step 2: Search Vector store with Hybrid Search (dense embeddings + BM25 keyword matching)
-        logger.info(f'Searching vector store with hybrid search (user={user_id}, doc={document_id}, cat={category_id})')
+        # Step 1 & 2: Fast Vector search (0ms BM25 lexical matching)
+        logger.info(f'Vector search (user={user_id}, doc={document_id}, cat={category_id})')
         raw_results = self.vector_service.query(
-            query_embedding=query_embedding,
+            query_embedding=None,
             user_id=user_id,
-            n_results=max(8, top_k),
+            n_results=min(3, top_k),
             document_id=document_id,
             category_id=category_id,
             query_text=question,
@@ -97,35 +92,18 @@ class RAGService:
             deduplicated = self._deduplicate_chunks(raw_results)
             context = self._build_context(deduplicated)
         
-        # Step 4: Generate answer with Gemini (if API key present) or Ollama
-        import os
-        use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
-        
-        answer = None
-        gemini_error = None
-        if use_gemini:
-            try:
-                logger.info(f'Sending {len(deduplicated)} chunks to Google Gemini API as context...')
-                answer = self.gemini_service.generate_answer(
-                    context=context, 
-                    question=question, 
-                    explanation_mode=explanation_mode, 
-                    language=language, 
-                    history=history
-                )
-            except Exception as e:
-                gemini_error = str(e)
-                logger.warning(f'Gemini API error ({e}), falling back to Ollama...')
-        
-        if not answer:
-            logger.info(f'Attempting fallback to Ollama...')
-            try:
-                answer = self.ollama_service.generate_answer(context, question)
-            except Exception as e:
-                logger.warning(f'Ollama API error: {e}')
-                if gemini_error:
-                    raise RuntimeError(f"Gemini API error: {gemini_error}")
-                raise RuntimeError("AI model unavailable. Please ensure GEMINI_API_KEY is configured in your Render environment variables.")
+        # Step 4: Generate answer with Gemini (sole AI provider)
+        try:
+            logger.info(f'Sending {len(deduplicated)} chunks to Gemini...')
+            answer = self.gemini_service.generate_answer(
+                context=context,
+                question=question,
+                explanation_mode=explanation_mode,
+                language=language,
+                history=history,
+            )
+        except Exception as e:
+            raise RuntimeError(f"Gemini API error: {e}")
         
         import re
         if answer:

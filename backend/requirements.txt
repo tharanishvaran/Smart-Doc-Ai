@@ -7,8 +7,7 @@ Flask-Bcrypt==1.0.1
 
 # Database
 SQLAlchemy==2.0.31
-PyMySQL==1.1.1
-cryptography==42.0.8
+# SQLite is built into Python — no extra driver needed
 
 # Environment
 python-dotenv==1.0.1
