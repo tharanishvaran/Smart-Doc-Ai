@@ -242,10 +242,10 @@ export default function Profile() {
               </div>
               <div>
                 <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
-                  PondyTechFix Cyber
+                  Clean White & Flame Orange
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Obsidian #06080D • Flame Orange #F95700
+                  Crisp White #FFFFFF • Flame Orange #F95700
                 </div>
               </div>
             </div>

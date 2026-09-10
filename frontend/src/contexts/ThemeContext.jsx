@@ -3,16 +3,17 @@ import { createContext, useContext, useEffect } from 'react';
 const ThemeContext = createContext();
 
 export const THEMES = [
-  { id: 'pondy-techfix', name: 'PondyTechFix Cyber', icon: '🔥', type: 'dark', color: '#F95700' },
+  { id: 'white-orange', name: 'Clean White & Flame Orange', icon: '🔥', type: 'light', color: '#F95700' },
 ];
 
 export function ThemeProvider({ children }) {
-  const theme = 'pondy-techfix';
+  const theme = 'white-orange';
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'pondy-techfix');
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('smartdoc_theme', 'pondy-techfix');
+    document.documentElement.setAttribute('data-theme', 'white-orange');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.classList.add('light');
+    localStorage.setItem('smartdoc_theme', 'white-orange');
   }, []);
 
   const changeTheme = () => {};

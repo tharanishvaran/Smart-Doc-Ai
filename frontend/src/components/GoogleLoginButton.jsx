@@ -1,26 +1,29 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { ExternalLink, X, CheckCircle, Play } from 'lucide-react';
+import { ExternalLink, X, Play, AlertCircle, RefreshCw } from 'lucide-react';
 
-export default function GoogleLoginButton({ text = 'signin_with', onError }) {
-  const buttonRef = useRef(null);
+export default function GoogleLoginButton({ text = 'Continue with Google', onError }) {
   const { loginWithGoogle } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [originNotice, setOriginNotice] = useState(false);
+  const tokenClientRef = useRef(null);
 
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-  const isDark = theme !== 'light-luxury';
+  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim();
 
-  // Load Google Identity Services script if not already present
+  // Load Google Identity Services SDK script if not already loaded
   useEffect(() => {
+    if (window.google?.accounts?.oauth2 || window.google?.accounts?.id) {
+      setScriptLoaded(true);
+      return;
+    }
+
     const existingScript = document.getElementById('google-gsi-script');
     if (existingScript) {
-      if (window.google?.accounts?.id) {
+      if (window.google?.accounts?.oauth2 || window.google?.accounts?.id) {
         setScriptLoaded(true);
       } else {
         existingScript.addEventListener('load', () => setScriptLoaded(true));
@@ -40,27 +43,141 @@ export default function GoogleLoginButton({ text = 'signin_with', onError }) {
     document.head.appendChild(script);
   }, []);
 
-  const handleCredentialResponse = async (response) => {
-    if (!response || !response.credential) {
-      if (onError) onError('Google sign-in was cancelled or failed to return credentials.');
+  // Initialize Google Token Client and GSI once script is ready
+  useEffect(() => {
+    if (!scriptLoaded || !clientId) return;
+
+    try {
+      // 1. Initialize Google OAuth 2.0 Token Client for custom button popups
+      if (window.google?.accounts?.oauth2) {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              setAuthLoading(false);
+              if (tokenResponse.error === 'popup_closed_by_user') {
+                return;
+              }
+              const errDesc = tokenResponse.error_description || tokenResponse.error;
+              if (String(errDesc).toLowerCase().includes('origin') || tokenResponse.error === 'origin_mismatch') {
+                setOriginNotice(true);
+              }
+              if (onError) onError(`Google sign-in error: ${errDesc}`);
+              return;
+            }
+
+            if (tokenResponse.access_token) {
+              setAuthLoading(true);
+              try {
+                await loginWithGoogle({ access_token: tokenResponse.access_token });
+                navigate('/dashboard');
+              } catch (err) {
+                const errorMsg = err.response?.data?.error || err.message || 'Google sign-in failed. Please try again.';
+                if (onError) onError(errorMsg);
+              } finally {
+                setAuthLoading(false);
+              }
+            }
+          },
+          error_callback: (nonOAuthErr) => {
+            setAuthLoading(false);
+            const msg = String(nonOAuthErr?.message || nonOAuthErr?.type || '');
+            if (msg.toLowerCase().includes('origin') || msg.includes('mismatch')) {
+              setOriginNotice(true);
+            }
+            console.warn('Google Token Client error:', nonOAuthErr);
+          },
+        });
+      }
+
+      // 2. Initialize Google ID Token Client (GSI) for One-Tap / credential callbacks
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            if (!response?.credential) return;
+            setAuthLoading(true);
+            try {
+              await loginWithGoogle(response.credential);
+              navigate('/dashboard');
+            } catch (err) {
+              const errorMsg = err.response?.data?.error || err.message || 'Google sign-in failed.';
+              if (onError) onError(errorMsg);
+            } finally {
+              setAuthLoading(false);
+            }
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Error initializing Google Sign-In:', e);
+    }
+  }, [scriptLoaded, clientId]);
+
+  const handleGoogleClick = () => {
+    if (!clientId) {
+      setShowSetupModal(true);
       return;
     }
 
     setAuthLoading(true);
-    try {
-      await loginWithGoogle(response.credential);
-      navigate('/dashboard');
-    } catch (err) {
-      const errorMsg = err.response?.data?.error || err.message || 'Google sign-in failed. Please try again.';
-      if (onError) onError(errorMsg);
-    } finally {
-      setAuthLoading(false);
+    setOriginNotice(false);
+
+    // If token client is ready, request access token
+    if (tokenClientRef.current) {
+      try {
+        tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+      } catch (err) {
+        setAuthLoading(false);
+        console.error('Failed to request Google access token:', err);
+        if (onError) onError('Could not open Google Sign-In popup. Please allow popups for this site.');
+      }
+      return;
     }
+
+    // Fallback if tokenClientRef is not ready yet: re-initialize dynamically
+    if (window.google?.accounts?.oauth2) {
+      try {
+        tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.access_token) {
+              try {
+                await loginWithGoogle({ access_token: tokenResponse.access_token });
+                navigate('/dashboard');
+              } catch (err) {
+                const errorMsg = err.response?.data?.error || err.message || 'Google sign-in failed.';
+                if (onError) onError(errorMsg);
+              } finally {
+                setAuthLoading(false);
+              }
+            } else {
+              setAuthLoading(false);
+            }
+          },
+        });
+        tokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (err) {
+        setAuthLoading(false);
+        if (onError) onError('Failed to open Google Sign-In.');
+        return;
+      }
+    }
+
+    // Script still loading fallback
+    setTimeout(() => {
+      setAuthLoading(false);
+      setShowSetupModal(true);
+    }, 1000);
   };
 
   const handleDevDemoLogin = async () => {
     setAuthLoading(true);
     setShowSetupModal(false);
+    setOriginNotice(false);
     try {
       await loginWithGoogle('demo_google_token_' + Date.now());
       navigate('/dashboard');
@@ -72,165 +189,145 @@ export default function GoogleLoginButton({ text = 'signin_with', onError }) {
     }
   };
 
-  // Render Google button once script and client ID are ready
-  useEffect(() => {
-    if (!scriptLoaded || !window.google?.accounts?.id || !buttonRef.current || !clientId) {
-      return;
-    }
-
-    try {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleCredentialResponse,
-      });
-
-      // Clear previous button content if re-rendering due to theme change
-      buttonRef.current.innerHTML = '';
-
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        type: 'standard',
-        shape: 'rectangular',
-        theme: isDark ? 'filled_black' : 'outline',
-        text: text,
-        size: 'large',
-        logo_alignment: 'left',
-        width: buttonRef.current.offsetWidth || 380,
-      });
-    } catch (e) {
-      console.error('Error initializing Google Sign-In button:', e);
-    }
-  }, [scriptLoaded, clientId, isDark, text]);
-
-  // If client ID is not configured, show styled placeholder button with setup modal trigger
-  if (!clientId) {
-    return (
-      <div className="google-auth-container">
+  return (
+    <div className="google-auth-container">
+      {/* Primary Custom Button Designed for Theme */}
+      <button
+        type="button"
+        className={`google-btn-custom ${authLoading ? 'google-btn-loading' : ''}`}
+        onClick={handleGoogleClick}
+        disabled={authLoading}
+        title="Sign in with your Google account"
+      >
         {authLoading ? (
-          <div className="google-auth-loading">
-            <div className="spinner-sm" />
-            <span>Signing in with Google Demo Account...</span>
-          </div>
+          <>
+            <div className="spinner-sm google-spinner" />
+            <span>Connecting to Google...</span>
+          </>
         ) : (
           <>
-            <button
-              type="button"
-              className="google-btn-custom google-btn-unconfigured"
-              onClick={() => setShowSetupModal(true)}
-              title="Click to view setup instructions or test Google login"
-            >
-              <GoogleIcon />
-              <span>{text === 'signup_with' ? 'Sign up with Google' : 'Sign in with Google'}</span>
-            </button>
-            <div className="google-setup-hint-row">
-              <span className="google-setup-hint">Client ID not configured</span>
-              <button 
-                type="button" 
-                className="google-setup-link-btn"
-                onClick={() => setShowSetupModal(true)}
-              >
-                Setup Guide / Quick Test
-              </button>
-            </div>
+            <GoogleIcon />
+            <span className="google-btn-text">{text}</span>
           </>
         )}
+      </button>
 
-        {showSetupModal && (
-          <div className="modal-backdrop animate-fade-in" onClick={() => setShowSetupModal(false)}>
-            <div 
-              className="glass-card google-setup-modal" 
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="google-modal-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <GoogleIcon />
-                  <h3 style={{ margin: 0 }}>Configure Google Authentication</h3>
+      {/* Origin Notice Banner if localhost:3000 isn't authorized in Google Cloud Console yet */}
+      {originNotice && (
+        <div className="google-origin-notice animate-fade-in">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <AlertCircle size={16} className="text-warning" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              <span>Origin <code>http://localhost:3000</code> is not registered in Google Cloud Console yet. </span>
+              <button 
+                type="button" 
+                className="google-dev-inline-btn"
+                onClick={handleDevDemoLogin}
+              >
+                Instant Dev Test Login
+              </button>
+              <span> or </span>
+              <button 
+                type="button" 
+                className="google-dev-inline-btn"
+                onClick={() => setShowSetupModal(true)}
+              >
+                View Setup Steps
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Setup Guide / Dev Mode Modal */}
+      {showSetupModal && (
+        <div className="modal-backdrop animate-fade-in" onClick={() => setShowSetupModal(false)}>
+          <div 
+            className="glass-card google-setup-modal" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="google-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <GoogleIcon />
+                <h3 style={{ margin: 0, fontSize: '1.15rem' }}>Configure Google Authentication</h3>
+              </div>
+              <button 
+                type="button" 
+                className="btn-icon" 
+                onClick={() => setShowSetupModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+              To enable live Google Sign-In on <code>http://localhost:3000</code>, follow these quick steps:
+            </p>
+
+            <div className="google-steps-list">
+              <div className="google-step-item">
+                <span className="step-num">1</span>
+                <div className="step-content">
+                  <strong>Open Google Cloud Credentials</strong>
+                  <p>Visit the Credentials page in Google Cloud Console.</p>
+                  <a 
+                    href="https://console.cloud.google.com/apis/credentials" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="google-link-out"
+                  >
+                    <span>Google Cloud Console Credentials</span>
+                    <ExternalLink size={13} />
+                  </a>
+                </div>
+              </div>
+
+              <div className="google-step-item">
+                <span className="step-num">2</span>
+                <div className="step-content">
+                  <strong>Add Authorized JavaScript Origin</strong>
+                  <p>Select your OAuth 2.0 Web Client and add:</p>
+                  <div className="code-snippet">
+                    Authorized JavaScript origins: <code>http://localhost:3000</code>
+                  </div>
+                </div>
+              </div>
+
+              <div className="google-step-item">
+                <span className="step-num">3</span>
+                <div className="step-content">
+                  <strong>Save in frontend/.env & backend/.env</strong>
+                  <div className="code-snippet">
+                    <code>VITE_GOOGLE_CLIENT_ID={clientId || 'your-client-id.apps.googleusercontent.com'}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="google-modal-footer">
+              <div className="google-dev-test-callout">
+                <div>
+                  <strong style={{ fontSize: '0.9rem', display: 'block', color: 'var(--text-main)' }}>
+                    Quick Dev Mode Test
+                  </strong>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Log in instantly with a verified student Google test account
+                  </span>
                 </div>
                 <button 
                   type="button" 
-                  className="btn-icon" 
-                  onClick={() => setShowSetupModal(false)}
+                  className="btn btn-primary"
+                  onClick={handleDevDemoLogin}
+                  style={{ gap: 8, flexShrink: 0 }}
                 >
-                  <X size={18} />
+                  <Play size={14} />
+                  <span>Test Login (Dev Mode)</span>
                 </button>
-              </div>
-
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                Google Sign-In requires an OAuth 2.0 Web Client ID from the Google Cloud Console.
-              </p>
-
-              <div className="google-steps-list">
-                <div className="google-step-item">
-                  <span className="step-num">1</span>
-                  <div className="step-content">
-                    <strong>Open Google Cloud Credentials</strong>
-                    <p>Go to the Google Cloud Console API & Services page.</p>
-                    <a 
-                      href="https://console.cloud.google.com/apis/credentials" 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="google-link-out"
-                    >
-                      <span>Open Google Cloud Console</span>
-                      <ExternalLink size={13} />
-                    </a>
-                  </div>
-                </div>
-
-                <div className="google-step-item">
-                  <span className="step-num">2</span>
-                  <div className="step-content">
-                    <strong>Create OAuth Client ID</strong>
-                    <p>Click <b>Create Credentials &gt; OAuth client ID</b>, choose <b>Web application</b>, and add:</p>
-                    <div className="code-snippet">Authorized JavaScript origins: <code>http://localhost:3000</code></div>
-                  </div>
-                </div>
-
-                <div className="google-step-item">
-                  <span className="step-num">3</span>
-                  <div className="step-content">
-                    <strong>Paste in frontend/.env</strong>
-                    <p>Copy your Client ID and add it to <code>frontend/.env</code>:</p>
-                    <div className="code-snippet">
-                      <code>VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com</code>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="google-modal-footer">
-                <div className="google-dev-test-callout">
-                  <span>Want to test the full app flow right now?</span>
-                  <button 
-                    type="button" 
-                    className="btn btn-primary"
-                    onClick={handleDevDemoLogin}
-                    style={{ gap: 8 }}
-                  >
-                    <Play size={14} />
-                    <span>Test Google Login (Dev Mode)</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="google-auth-container">
-      {authLoading && (
-        <div className="google-auth-loading">
-          <div className="spinner-sm" />
-          <span>Authenticating with Google...</span>
         </div>
       )}
-      <div 
-        ref={buttonRef} 
-        className="google-btn-slot"
-        style={{ display: authLoading ? 'none' : 'flex', justifyContent: 'center' }} 
-      />
     </div>
   );
 }

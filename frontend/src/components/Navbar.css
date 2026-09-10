@@ -4,10 +4,11 @@
   right: 0;
   left: var(--sidebar-width);
   height: var(--navbar-height);
-  background: rgba(8, 11, 18, 0.92);
+  background: var(--bg-surface);
   backdrop-filter: var(--glass-backdrop);
   -webkit-backdrop-filter: var(--glass-backdrop);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;

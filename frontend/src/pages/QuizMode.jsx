@@ -1,45 +1,106 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { quizService } from '../services/quizService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { 
-  Play, 
-  Clock, 
+  Award, 
+  HelpCircle, 
+  Sparkles, 
   CheckCircle2, 
   XCircle, 
-  Sparkles, 
-  ArrowRight,
-  RefreshCw,
-  FileQuestion
+  Clock, 
+  RefreshCw, 
+  Play, 
+  FileQuestion,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
+import './ExamPrep.jsx'; // Shares theme tokens
+
+const STORAGE_KEY = 'quiz_session_state';
+
+const getInitialState = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
 
 export default function QuizMode() {
-  const [activeTab, setActiveTab] = useState('interactive'); // 'interactive' or 'generator'
+  const savedState = useRef(getInitialState()).current;
+
+  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'interactive'); // 'interactive' or 'generator'
   
   // Generator states
-  const [topic, setTopic] = useState('');
-  const [questionType, setQuestionType] = useState('MCQs');
-  const [markType, setMarkType] = useState('5');
-  const [count, setCount] = useState(5);
-  const [generatedText, setGeneratedText] = useState('');
+  const [topic, setTopic] = useState(savedState?.topic || '');
+  const [questionType, setQuestionType] = useState(savedState?.questionType || 'MCQs');
+  const [markType, setMarkType] = useState(savedState?.markType || '5');
+  const [count, setCount] = useState(savedState?.count ?? 5);
+  const [generatedText, setGeneratedText] = useState(savedState?.generatedText || '');
 
   // Interactive Quiz states
-  const [subject, setSubject] = useState('');
-  const [quizTopic, setQuizTopic] = useState('');
-  const [questionCount, setQuestionCount] = useState(5);
-  const [timerEnabled, setTimerEnabled] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(60); // 60s per question
-  const [timerActive, setTimerActive] = useState(false);
+  const [subject, setSubject] = useState(savedState?.subject || '');
+  const [quizTopic, setQuizTopic] = useState(savedState?.quizTopic || '');
+  const [questionCount, setQuestionCount] = useState(savedState?.questionCount ?? 5);
+  const [timerEnabled, setTimerEnabled] = useState(savedState?.timerEnabled ?? true);
+  const [timeLeft, setTimeLeft] = useState(savedState?.timeLeft ?? 60); // 60s per question
+  const [timerActive, setTimerActive] = useState(savedState?.timerActive ?? false);
 
-  const [quizSession, setQuizSession] = useState(null);
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const [userAnswerText, setUserAnswerText] = useState('');
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [evalResult, setEvalResult] = useState(null);
+  const [quizSession, setQuizSession] = useState(savedState?.quizSession || null);
+  const [currentIdx, setCurrentIdx] = useState(savedState?.currentIdx ?? 0);
+  const [userAnswerText, setUserAnswerText] = useState(savedState?.userAnswerText || '');
+  const [selectedOption, setSelectedOption] = useState(savedState?.selectedOption ?? null);
+  const [evalResult, setEvalResult] = useState(savedState?.evalResult || null);
   const [evaluating, setEvaluating] = useState(false);
-  const [scoreBoard, setScoreBoard] = useState({ total: 0, correct: 0 });
+  const [scoreBoard, setScoreBoard] = useState(savedState?.scoreBoard || { total: 0, correct: 0 });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        activeTab,
+        topic,
+        questionType,
+        markType,
+        count,
+        generatedText,
+        subject,
+        quizTopic,
+        questionCount,
+        timerEnabled,
+        timeLeft,
+        timerActive,
+        quizSession,
+        currentIdx,
+        userAnswerText,
+        selectedOption,
+        evalResult,
+        scoreBoard,
+      }));
+    } catch {}
+  }, [
+    activeTab,
+    topic,
+    questionType,
+    markType,
+    count,
+    generatedText,
+    subject,
+    quizTopic,
+    questionCount,
+    timerEnabled,
+    timeLeft,
+    timerActive,
+    quizSession,
+    currentIdx,
+    userAnswerText,
+    selectedOption,
+    evalResult,
+    scoreBoard,
+  ]);
 
   // Countdown timer effect
   useEffect(() => {

@@ -6,11 +6,23 @@ venv/
 backend/venv/
 backend/.venv/
 
-# Environment Variables
+# Environment Variables & Secrets
 .env
-backend/.env
-frontend/.env
-*.env.local
+.env.*
+!.env.example
+*.env
+*.env.*
+!*.env.example
+backend/.env*
+!backend/.env.example
+frontend/.env*
+!frontend/.env.example
+*.pem
+*.key
+*.cert
+credentials.json
+client_secret*.json
+service_account*.json
 
 # Build Outputs
 dist/

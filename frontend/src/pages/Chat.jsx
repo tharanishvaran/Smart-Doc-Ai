@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { chatService } from '../services/chatService';
 import { documentService } from '../services/documentService';
 import { categoryService } from '../services/categoryService';
-import LoadingSpinner from '../components/LoadingSpinner';
 import { 
   MessageSquare, 
   Plus, 
@@ -12,16 +11,13 @@ import {
   User, 
   Send, 
   Sparkles, 
-  BookOpen, 
   Copy, 
   Check,
-  ChevronDown,
-  ChevronUp,
-  Mic,
-  MicOff,
-  Volume2,
-  Globe,
-  X
+  Mic, 
+  MicOff, 
+  Volume2, 
+  Globe, 
+  X 
 } from 'lucide-react';
 import './Chat.css';
 
@@ -36,18 +32,24 @@ const LANGUAGES = [
   { code: 'English', name: 'English' },
   { code: 'Tamil', name: 'Tamil (தமிழ்)' },
   { code: 'Tamil + English', name: 'Tamil + English (Tanglish)' },
-  { code: 'Hindi', name: 'Hindi (हिंदी)' },
   { code: 'Telugu', name: 'Telugu (తెలుగు)' }
 ];
+
+// In-memory cache for loaded sessions across component remounts and tab switching
+const sessionMessagesCache = new Map();
 
 const Message = memo(function Message({ msg }) {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
-  const [showSources, setShowSources] = useState(true);
   const [speaking, setSpeaking] = useState(false);
 
+  // Strip ** formatting from messages
+  const cleanMessage = useMemo(() => {
+    return (msg.message || '').replace(/\*\*/g, '');
+  }, [msg.message]);
+
   const handleCopy = () => {
-    navigator.clipboard.writeText(msg.message);
+    navigator.clipboard.writeText(cleanMessage);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -58,7 +60,7 @@ const Message = memo(function Message({ msg }) {
         window.speechSynthesis.cancel();
         setSpeaking(false);
       } else {
-        const utterance = new SpeechSynthesisUtterance(msg.message);
+        const utterance = new SpeechSynthesisUtterance(cleanMessage);
         utterance.onend = () => setSpeaking(false);
         setSpeaking(true);
         window.speechSynthesis.speak(utterance);
@@ -110,45 +112,8 @@ const Message = memo(function Message({ msg }) {
         </div>
 
         <div className="message-bubble glass-card">
-          <p className="message-text" style={{ whiteSpace: 'pre-wrap' }}>{msg.message}</p>
+          <p className="message-text" style={{ whiteSpace: 'pre-wrap' }}>{cleanMessage}</p>
         </div>
-
-        {msg.sources && msg.sources.length > 0 && (
-          <div className="sources-container glass-card">
-            <button 
-              className="sources-toggle" 
-              onClick={() => setShowSources(!showSources)}
-            >
-              <div className="sources-title">
-                <BookOpen size={14} />
-                <span>Verified Source Citations ({msg.sources.length})</span>
-              </div>
-              {showSources ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
-
-            {showSources && (
-              <div className="sources-grid">
-                {msg.sources.map((src, i) => (
-                  <div key={i} className="source-card">
-                    <div className="source-doc-name">
-                      📄 {src.filename}
-                    </div>
-                    <div className="source-meta">
-                      <span className="source-page">
-                        {src.page_number ? `Page ${src.page_number}` : src.section || 'Section'}
-                      </span>
-                      {src.relevance_score && (
-                        <span className="badge badge-primary">
-                          {(src.relevance_score * 100).toFixed(0)}% match
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -160,9 +125,9 @@ export default function Chat() {
   const [sessions, setSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [question, setQuestion] = useState('');
-  const [explanationMode, setExplanationMode] = useState('normal');
-  const [language, setLanguage] = useState('English');
+  const [question, setQuestion] = useState(() => sessionStorage.getItem('chat_draft_question') || '');
+  const [explanationMode, setExplanationMode] = useState(() => sessionStorage.getItem('chat_explanation_mode') || 'normal');
+  const [language, setLanguage] = useState(() => sessionStorage.getItem('chat_language') || 'English');
   const [isListening, setIsListening] = useState(false);
   const [isVoiceStarting, setIsVoiceStarting] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -242,13 +207,41 @@ export default function Chat() {
   const skipNextLoadSessionRef = useRef(null);
 
   useEffect(() => {
+    try {
+      if (question) {
+        sessionStorage.setItem('chat_draft_question', question);
+      } else {
+        sessionStorage.removeItem('chat_draft_question');
+      }
+    } catch {}
+  }, [question]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('chat_explanation_mode', explanationMode);
+    } catch {}
+  }, [explanationMode]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('chat_language', language);
+    } catch {}
+  }, [language]);
+
+  useEffect(() => {
     if (!sessionId) {
+      const activeId = sessionStorage.getItem('active_chat_session_id');
+      if (activeId) {
+        navigate(`/chat/${activeId}`, { replace: true });
+        return;
+      }
       setActiveSession(null);
       activeSessionRef.current = null;
       setMessages([]);
       return;
     }
     const id = parseInt(sessionId);
+    sessionStorage.setItem('active_chat_session_id', id);
     if (skipNextLoadSessionRef.current === id) {
       // Session was just created by sendQuestion or newChat; keep live messages!
       skipNextLoadSessionRef.current = null;
@@ -264,21 +257,45 @@ export default function Chat() {
     if (loadingRef.current && activeSessionRef.current?.id === id) {
       return;
     }
+    sessionStorage.setItem('active_chat_session_id', id);
+
+    // Instant 0ms cache retrieval if already in memory
+    const cached = sessionMessagesCache.get(id);
+    if (cached) {
+      setActiveSession(cached.session);
+      activeSessionRef.current = cached.session;
+      setMessages(cached.messages);
+      setSessionLoading(false);
+      // Silently refresh in the background without blocking UI or showing loader
+      chatService.getSession(id).then(res => {
+        const session = res.data.data.session;
+        sessionMessagesCache.set(id, { session, messages: session.messages || [] });
+      }).catch(() => {});
+      return;
+    }
+
     setSessionLoading(true);
     try {
       const res = await chatService.getSession(id);
       const session = res.data.data.session;
+      const msgs = session.messages || [];
+      sessionMessagesCache.set(id, { session, messages: msgs });
       setActiveSession(session);
       activeSessionRef.current = session;
-      setMessages(session.messages || []);
-    } catch { setError('Failed to load session history.'); }
-    finally { setSessionLoading(false); }
+      setMessages(msgs);
+    } catch { 
+      setError('Failed to load session history.'); 
+    } finally { 
+      setSessionLoading(false); 
+    }
   };
 
   const newChat = async () => {
     const res = await chatService.createSession('New Conversation');
     const session = res.data.data.session;
     skipNextLoadSessionRef.current = session.id;
+    sessionStorage.setItem('active_chat_session_id', session.id);
+    sessionMessagesCache.set(session.id, { session, messages: [] });
     setSessions(prev => [session, ...prev]);
     setActiveSession(session);
     activeSessionRef.current = session;
@@ -289,8 +306,10 @@ export default function Chat() {
   const deleteSession = async (id, e) => {
     e.stopPropagation();
     await chatService.deleteSession(id);
+    sessionMessagesCache.delete(id);
     setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSession?.id === id) { 
+    if (activeSession?.id === id || String(sessionStorage.getItem('active_chat_session_id')) === String(id)) { 
+      sessionStorage.removeItem('active_chat_session_id');
       setActiveSession(null); 
       setMessages([]); 
       navigate('/chat'); 
@@ -677,10 +696,13 @@ export default function Chat() {
       const res = await chatService.createSession(query.slice(0, 50));
       currentSession = res.data.data.session;
       skipNextLoadSessionRef.current = currentSession.id;
+      sessionStorage.setItem('active_chat_session_id', currentSession.id);
       setSessions(prev => [currentSession, ...prev]);
       setActiveSession(currentSession);
       activeSessionRef.current = currentSession;
       navigate(`/chat/${currentSession.id}`, { replace: true });
+    } else {
+      sessionStorage.setItem('active_chat_session_id', currentSession.id);
     }
 
     // Add user message immediately
@@ -715,11 +737,15 @@ export default function Chat() {
         },
         onDone: ({ sources, message_id, session_id }) => {
           // Finalise: remove streaming flag, attach sources
-          setMessages(prev => prev.map(m =>
-            m.id === aiPlaceholderId
-              ? { ...m, sources: sources || [], streaming: false }
-              : m
-          ));
+          setMessages(prev => {
+            const updated = prev.map(m =>
+              m.id === aiPlaceholderId
+                ? { ...m, sources: sources || [], streaming: false }
+                : m
+            );
+            sessionMessagesCache.set(currentSession.id, { session: currentSession, messages: updated });
+            return updated;
+          });
           if (currentSession.title === 'New Conversation' || currentSession.title === 'New Chat') {
             setSessions(prev => prev.map(s =>
               s.id === currentSession.id ? { ...s, title: query.slice(0, 50) } : s
@@ -875,7 +901,29 @@ export default function Chat() {
             </div>
           )}
 
-          {sessionLoading && <LoadingSpinner message="Retrieving conversation history..." />}
+          {sessionLoading && (
+            <div className="chat-skeleton-container">
+              <div className="skeleton-status-pill animate-fade-in">
+                <span className="skeleton-pulse-dot" />
+                <span>Restoring conversation history...</span>
+              </div>
+              <div className="skeleton-row skeleton-user-row animate-fade-in">
+                <div className="skeleton-avatar skeleton-user-avatar pulse-glow" />
+                <div className="skeleton-bubble">
+                  <div className="skeleton-line line-medium" />
+                  <div className="skeleton-line line-short" />
+                </div>
+              </div>
+              <div className="skeleton-row skeleton-ai-row animate-fade-in">
+                <div className="skeleton-avatar skeleton-ai-avatar pulse-glow" />
+                <div className="skeleton-bubble">
+                  <div className="skeleton-line line-long" />
+                  <div className="skeleton-line line-full" />
+                  <div className="skeleton-line line-medium" />
+                </div>
+              </div>
+            </div>
+          )}
           
           {messages.map((msg, i) => (
             <Message key={msg.id || i} msg={msg} />

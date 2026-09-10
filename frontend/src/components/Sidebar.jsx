@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Sidebar Header Logo */}
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">
-            <Sparkles className="logo-sparkle" size={20} />
+            <img src="/logo-transparent.png" alt="SmartDoc AI Logo" className="app-logo-img" />
           </div>
           <div className="sidebar-logo-text">
             <span className="logo-brand">SmartDoc</span>
@@ -61,18 +61,22 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Navigation items */}
         <nav className="sidebar-nav">
           <div className="nav-section-title">MAIN MENU</div>
-          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={handleLinkClick}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-            >
-              <Icon className="sidebar-icon" size={18} />
-              <span>{label}</span>
-              <div className="active-indicator" />
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map(({ to, icon: Icon, label }) => {
+            const activeChatId = to === '/chat' ? sessionStorage.getItem('active_chat_session_id') : null;
+            const targetTo = activeChatId ? `/chat/${activeChatId}` : to;
+            return (
+              <NavLink
+                key={to}
+                to={targetTo}
+                onClick={handleLinkClick}
+                className={({ isActive }) => `sidebar-link ${isActive || (to === '/chat' && window.location.pathname.startsWith('/chat')) ? 'active' : ''}`}
+              >
+                <Icon className="sidebar-icon" size={18} />
+                <span>{label}</span>
+                <div className="active-indicator" />
+              </NavLink>
+            );
+          })}
 
           {/* Pro / RAG Status Card */}
           <div className="sidebar-promo-card">

@@ -21,11 +21,16 @@ class ExamPrepService:
 
     def _get_context(self, user_id: int, query: str = "syllabus questions exam units", category_id: int = None) -> str:
         try:
-            emb = self.embedding_service.embed_query(query)
-            results = self.vector_service.query(emb, user_id, n_results=4, category_id=category_id, query_text=query)
+            results = self.vector_service.query(
+                query_embedding=None,
+                user_id=user_id,
+                n_results=3,
+                category_id=category_id,
+                query_text=query
+            )
             if not results:
                 return "No document context uploaded."
-            chunks = [f"[Document: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results]
+            chunks = [f"[Document: {r['metadata'].get('filename', 'Doc')}]\n{r['text'][:800]}" for r in results]
             return "\n\n---\n\n".join(chunks)
         except Exception as e:
             logger.warning(f"Error fetching context for exam prep: {e}")
@@ -34,12 +39,14 @@ class ExamPrepService:
     def _call_llm(self, prompt: str, is_json: bool = False) -> str:
         use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            return self.gemini_service.generate_raw(prompt=prompt, max_tokens=1500, is_json=is_json)
-        return self.ollama_service.generate_answer(context="", question=prompt)
+            res = self.gemini_service.generate_raw(prompt=prompt, max_tokens=1500, is_json=is_json)
+        else:
+            res = self.ollama_service.generate_answer(context="", question=prompt)
+        return res.replace('**', '') if res else res
 
     def _clean_and_parse_json(self, raw: str) -> dict:
         import re
-        cleaned = raw.strip()
+        cleaned = raw.replace('**', '').strip()
         # Remove any leading LLM note lines like *(Note: ...)*
         cleaned = re.sub(r'^\*\([^)]+\)\*\s*', '', cleaned)
         start_idx = cleaned.find('{')
@@ -61,6 +68,7 @@ UPLOADED SYLLABUS & NOTES CONTEXT:
 
 Generate a comprehensive, highly effective Exam Preparation Strategy for "{subject}".
 IMPORTANT FORMATTING: Format all points clearly using bullet points (•) and concise sub-headings. Avoid long wall-of-text paragraphs.
+Do NOT use markdown bold formatting or asterisks (**). Output plain text without **.
 
 Structure your output into:
 1. 🎯 Overall Strategy & Mindset
@@ -73,6 +81,7 @@ Structure your output into:
     def generate_study_plan(self, user_id: int, subject: str, days_remaining: int, category_id: int = None) -> dict:
         context = self._get_context(user_id, f"{subject} units syllabus modules topics", category_id)
         prompt = f"""You are an AI Study Planner. Create an adaptable day-by-day study schedule for a student taking an exam in {days_remaining} days for the subject "{subject}".
+Do NOT use asterisks (**).
 
 DOCUMENT CONTEXT:
 {context}
@@ -106,6 +115,7 @@ Respond ONLY in valid JSON format matching this structure:
         context = self._get_context(user_id, f"{subject} question papers syllabus topics weightage", category_id)
         prompt = f"""Analyze the syllabus and previous question papers for subject "{subject}".
 Identify important topics specifically for "{subject}" based on frequency and exam weightage.
+Do NOT use asterisks (**).
 
 DOCUMENT CONTEXT:
 {context}
@@ -149,6 +159,7 @@ DOCUMENT CONTEXT:
 
 Provide a detailed Previous Question Paper Breakdown for "{subject}".
 IMPORTANT FORMATTING: Format all key insights using clear bullet points (•) and concise sections for easy reading.
+Do NOT use markdown bold formatting or asterisks (**). Output plain text without **.
 
 Structure:
 1. 🔁 Frequently Repeated Questions & Topics
@@ -165,6 +176,7 @@ DOCUMENT CONTEXT:
 {context}
 
 IMPORTANT FORMATTING: Format all questions clearly using bullet points (•) with clear numbering under each category.
+Do NOT use markdown bold formatting or asterisks (**). Output plain text without **.
 
 Categorize into:
 1. 📌 Predicted 2-Mark Short Questions

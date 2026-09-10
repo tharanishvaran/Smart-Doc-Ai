@@ -19,9 +19,35 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Handle 401 globally (except on login/register where 401 is an expected invalid credential error)
+function stripAsterisks(obj) {
+  if (typeof obj === 'string') {
+    return obj.replace(/\*\*/g, '');
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(stripAsterisks);
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const cleaned = {};
+    for (const key of Object.keys(obj)) {
+      if (key.includes('token') || key === 'access_token' || key === 'refresh_token') {
+        cleaned[key] = obj[key];
+      } else {
+        cleaned[key] = stripAsterisks(obj[key]);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
+
+// Handle 401 globally and sanitize response data
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response && response.data) {
+      response.data = stripAsterisks(response.data);
+    }
+    return response;
+  },
   (error) => {
     const isAuthRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
     if (error.response?.status === 401 && !isAuthRequest) {

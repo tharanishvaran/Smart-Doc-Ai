@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { examPrepService } from '../services/examPrepService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { 
@@ -12,21 +12,62 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
+const STORAGE_KEY = 'examprep_session_state';
+
+const getInitialState = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function ExamPrep() {
-  const [activeTab, setActiveTab] = useState('strategy');
-  const [subject, setSubject] = useState('');
-  const [unit, setUnit] = useState('');
-  const [examType, setExamType] = useState('Semester Final');
-  const [daysRemaining, setDaysRemaining] = useState(10);
+  const savedState = useRef(getInitialState()).current;
+
+  const [activeTab, setActiveTab] = useState(savedState?.activeTab || 'strategy');
+  const [subject, setSubject] = useState(savedState?.subject || '');
+  const [unit, setUnit] = useState(savedState?.unit || '');
+  const [examType, setExamType] = useState(savedState?.examType || 'Semester Final');
+  const [daysRemaining, setDaysRemaining] = useState(savedState?.daysRemaining ?? 10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Results state
-  const [strategyResult, setStrategyResult] = useState('');
-  const [studyPlanResult, setStudyPlanResult] = useState(null);
-  const [importantTopicsResult, setImportantTopicsResult] = useState(null);
-  const [paperAnalysisResult, setPaperAnalysisResult] = useState('');
-  const [expectedQuestionsResult, setExpectedQuestionsResult] = useState('');
+  const [strategyResult, setStrategyResult] = useState(savedState?.strategyResult || '');
+  const [studyPlanResult, setStudyPlanResult] = useState(savedState?.studyPlanResult || null);
+  const [importantTopicsResult, setImportantTopicsResult] = useState(savedState?.importantTopicsResult || null);
+  const [paperAnalysisResult, setPaperAnalysisResult] = useState(savedState?.paperAnalysisResult || '');
+  const [expectedQuestionsResult, setExpectedQuestionsResult] = useState(savedState?.expectedQuestionsResult || '');
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        activeTab,
+        subject,
+        unit,
+        examType,
+        daysRemaining,
+        strategyResult,
+        studyPlanResult,
+        importantTopicsResult,
+        paperAnalysisResult,
+        expectedQuestionsResult,
+      }));
+    } catch {}
+  }, [
+    activeTab,
+    subject,
+    unit,
+    examType,
+    daysRemaining,
+    strategyResult,
+    studyPlanResult,
+    importantTopicsResult,
+    paperAnalysisResult,
+    expectedQuestionsResult,
+  ]);
 
   const handleGenerateStrategy = async () => {
     if (!subject.trim()) { setError('Please enter a subject name.'); return; }

@@ -31,12 +31,13 @@ export default function Register() {
       <div className="app-ambient-bg">
         <div className="blob blob-1" />
         <div className="blob blob-2" />
+        <div className="ambient-brand-watermark" />
       </div>
 
       <div className="auth-card glass-card animate-fade-in">
         <div className="auth-logo">
           <div className="auth-logo-icon">
-            <Sparkles size={22} className="logo-sparkle" />
+            <img src="/logo-transparent.png" alt="SmartDoc AI Logo" className="app-logo-img" />
           </div>
           <div className="auth-logo-text">
             SmartDoc <span className="logo-badge">AI</span>
@@ -131,7 +132,7 @@ export default function Register() {
           <span>OR</span>
         </div>
 
-        <GoogleLoginButton text="signup_with" onError={(err) => setError(err)} />
+        <GoogleLoginButton text="Continue with Google" onError={(err) => setError(err)} />
 
         <div className="auth-footer" style={{ marginTop: 24, textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
           Already have an account? <Link to="/login" style={{ fontWeight: 600 }}>Sign in</Link>

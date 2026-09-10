@@ -302,7 +302,7 @@ def ask_stream():
             yield f"data: {json.dumps({'type': 'error', 'message': f'Gemini API error: {str(e)}'})}\n\n"
             return
 
-        answer = _re.sub(r'\s*\[Source[^\]]*\]', '', ''.join(full_text)).strip()
+        answer = _re.sub(r'\s*\[Source[^\]]*\]', '', ''.join(full_text)).replace('**', '').strip()
 
         # Store in DB after streaming completes
         try:

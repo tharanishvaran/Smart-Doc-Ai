@@ -110,6 +110,7 @@ class RAGService:
             # Strip out any repetitive inline [Source: ...] or [Source X: ...] brackets from answer text
             answer = re.sub(r'\s*\[Source:\s*[^\]]+\]', '', answer)
             answer = re.sub(r'\s*\[Source\s*\d+:\s*[^\]]+\]', '', answer)
+            answer = answer.replace('**', '')
             answer = answer.strip()
 
         # Step 5: Prepare source citations

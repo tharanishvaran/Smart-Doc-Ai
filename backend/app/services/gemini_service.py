@@ -55,7 +55,8 @@ RESPONSE GUIDELINES:
 2. If the topic is NOT in the provided documents (e.g. asking about Java when documents are C):
    - Always start with: "Based on the provided documents, there is no information about <topic>. However, here is a general explanation:"
    - Then provide a clear, concise general overview (definition, 3-4 bullet points of core features/syntax).
-3. Do NOT add inline [Source:...] markers."""
+3. Do NOT add inline [Source:...] markers.
+4. Do NOT use markdown bold formatting or asterisks (**). Output clean plain text without **."""
 
 
 class GeminiService:
@@ -165,7 +166,7 @@ ANSWER:"""
                             parts = candidates[0]['content'].get('parts', [])
                             text_parts = [p['text'] for p in parts if 'text' in p and p['text'].strip()]
                             if text_parts:
-                                return "\n".join(text_parts).strip()
+                                return "\n".join(text_parts).replace('**', '').strip()
                     elif response.status_code == 404:
                         # Model not available for this key, try next model without discarding key
                         logger.info(f'Model {model_name} not found (404) for this key, trying next model...')
@@ -384,7 +385,7 @@ ANSWER:"""
                             parts = candidates[0]['content'].get('parts', [])
                             text_parts = [p['text'] for p in parts if 'text' in p and p['text'].strip()]
                             if text_parts:
-                                return "\n".join(text_parts).strip()
+                                return "\n".join(text_parts).replace('**', '').strip()
                     elif response.status_code == 404:
                         continue
                     elif response.status_code in (429, 503):

@@ -69,7 +69,7 @@ class QuestionAnalysisService:
             for pattern in question_patterns:
                 matches = re.findall(pattern, text, re.IGNORECASE | re.MULTILINE)
                 for match in matches:
-                    clean_q = match.strip()
+                    clean_q = match.strip().replace('**', '')
                     if len(clean_q) > 15:
                         questions.append({
                             'text': clean_q,

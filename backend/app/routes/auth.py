@@ -75,21 +75,22 @@ def login():
 
 @auth_bp.route('/google', methods=['POST'])
 def google_auth():
-    """Authenticate or register user using Google OAuth ID token."""
+    """Authenticate or register user using Google OAuth ID token or access token."""
     data = request.get_json()
 
     if not data:
         return error_response('Request body is required.', 400)
 
     credential = data.get('credential') or data.get('id_token') or data.get('token')
-    if not credential:
-        return error_response('Google credential token is required.', 400)
+    access_token = data.get('access_token')
+    if not credential and not access_token:
+        return error_response('Google credential token or access token is required.', 400)
 
     try:
-        user = AuthService.authenticate_or_register_google(credential)
-        access_token = create_access_token(identity=str(user.id))
+        user = AuthService.authenticate_or_register_google(credential=credential, access_token=access_token)
+        access_token_jwt = create_access_token(identity=str(user.id))
         return success_response(
-            data={'user': user.to_dict(), 'access_token': access_token},
+            data={'user': user.to_dict(), 'access_token': access_token_jwt},
             message='Google authentication successful.',
         )
     except ValueError as e:

@@ -13,7 +13,7 @@
 
 /* ─── Sessions History Pane ─────────────────────────────────────── */
 .chat-history-pane {
-  background: rgba(13, 18, 28, 0.88);
+  background: var(--bg-surface);
   backdrop-filter: var(--glass-backdrop);
   -webkit-backdrop-filter: var(--glass-backdrop);
   border: 1px solid var(--border);
@@ -23,6 +23,7 @@
   flex-direction: column;
   gap: 14px;
   overflow: hidden;
+  box-shadow: var(--card-shadow);
 }
 
 .chat-pane-header {
@@ -128,11 +129,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(13, 18, 28, 0.90);
+  background: var(--bg-surface);
   backdrop-filter: var(--glass-backdrop);
   -webkit-backdrop-filter: var(--glass-backdrop);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
+  box-shadow: var(--card-shadow);
 }
 
 /* ─── Top Filter / Mode Bar ─────────────────────────────────────── */
@@ -141,7 +143,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 18px;
-  background: rgba(6, 8, 13, 0.75);
+  background: var(--bg-surface-hover);
   border-bottom: 1px solid var(--border);
   gap: 14px;
   flex-shrink: 0;
@@ -167,7 +169,7 @@
   font-size: 0.80rem;
   max-width: 176px;
   border-radius: var(--radius-sm);
-  background: rgba(20, 26, 40, 0.85);
+  background: var(--bg-surface-elevated);
   border: 1px solid var(--border);
   color: var(--text-main);
 }
@@ -268,7 +270,7 @@
   font-size: 1.55rem;
   font-weight: 800;
   margin-bottom: 10px;
-  background: linear-gradient(135deg, #ffffff 40%, #F95700 100%);
+  background: linear-gradient(135deg, #0F172A 30%, #F95700 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -352,9 +354,10 @@
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #1e2638 0%, #2a354c 100%);
+  background: linear-gradient(135deg, #F95700 0%, #EA580C 100%);
   border: 1px solid var(--border-active);
   color: #fff;
+  box-shadow: 0 2px 8px var(--primary-glow);
 }
 
 .ai-avatar {
@@ -414,20 +417,22 @@
   word-break: break-word;
 }
 
-/* AI bubble: deep obsidian surface with flame orange accent border */
+/* AI bubble: elegant pure porcelain with flame orange accent border */
 .ai-row .message-bubble {
-  background: #0d121c;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-left: 3px solid var(--primary);
-  color: #e2eaf8;
+  color: #1e293b;
+  box-shadow: 0 2px 12px -2px rgba(15, 23, 42, 0.06);
   border-top-left-radius: 4px;
 }
 
-/* User bubble: dark tech slate with warm orange tint */
+/* User bubble: vibrant electric flame orange gradient with white text */
 .user-row .message-bubble {
-  background: linear-gradient(135deg, #182030 0%, #1e2638 100%);
-  border: 1px solid rgba(249, 87, 0, 0.35);
+  background: var(--primary-gradient);
+  border: 1px solid rgba(249, 87, 0, 0.4);
   color: #ffffff;
+  box-shadow: 0 4px 14px -2px var(--primary-glow);
   border-top-right-radius: 4px;
 }
 
@@ -549,7 +554,7 @@
   gap: 10px;
   padding: 14px 18px;
   border-top: 1px solid var(--border);
-  background: rgba(6, 8, 13, 0.80);
+  background: var(--bg-surface-elevated);
   flex-shrink: 0;
 }
 
@@ -558,7 +563,7 @@
   border-radius: 999px;
   padding: 11px 20px;
   min-width: 0;
-  background: rgba(13, 18, 28, 0.95);
+  background: var(--bg-surface-hover);
   border: 1px solid var(--border);
   color: var(--text-main);
   font-size: 0.92rem;
@@ -569,6 +574,7 @@
   outline: none;
   border-color: var(--border-active);
   box-shadow: 0 0 0 3px rgba(249, 87, 0, 0.12);
+  background: #ffffff;
 }
 
 .chat-input-field::placeholder { color: var(--text-dim); }
@@ -806,4 +812,124 @@
   .send-btn { padding: 9px 16px; font-size: 0.83rem; }
 
   .voice-listening-bar { margin: 0 7px 6px; padding: 7px 9px; flex-wrap: wrap; gap: 7px; }
+}
+
+/* ─── Modern Chat History Skeleton Loader ───────────────────────── */
+.chat-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding: 12px 4px;
+  opacity: 0.95;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.skeleton-status-pill {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(249, 87, 0, 0.08);
+  border: 1px solid rgba(249, 87, 0, 0.25);
+  border-radius: 99px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #ff914d;
+  letter-spacing: 0.02em;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 10px rgba(249, 87, 0, 0.12);
+}
+
+.skeleton-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f95700;
+  box-shadow: 0 0 8px #f95700;
+  animation: skeletonDotGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes skeletonDotGlow {
+  0%   { transform: scale(0.85); opacity: 0.5; box-shadow: 0 0 4px #f95700; }
+  100% { transform: scale(1.2); opacity: 1; box-shadow: 0 0 12px #f95700; }
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 12px;
+  max-width: 82%;
+}
+
+.skeleton-user-row {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.skeleton-ai-row {
+  align-self: flex-start;
+}
+
+.skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-ai-avatar {
+  background: var(--primary-gradient);
+  border: 1px solid var(--border-active);
+  box-shadow: 0 0 14px var(--primary-glow);
+}
+
+.skeleton-user-avatar {
+  background: linear-gradient(135deg, #F95700 0%, #EA580C 100%);
+  border: 1px solid var(--border-active);
+}
+
+.skeleton-bubble {
+  padding: 14px 18px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 240px;
+  max-width: 540px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-user-row .skeleton-bubble {
+  background: var(--primary-subtle);
+  border-color: rgba(249, 87, 0, 0.25);
+}
+
+.skeleton-line {
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.05) 0%,
+    rgba(249, 87, 0, 0.18) 50%,
+    rgba(15, 23, 42, 0.05) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.line-short { width: 45%; }
+.line-medium { width: 72%; }
+.line-long { width: 92%; }
+.line-full { width: 98%; }
+
+@keyframes skeletonShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }

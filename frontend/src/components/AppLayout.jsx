@@ -8,10 +8,11 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
-      {/* Dynamic Ambient Background Blobs */}
+      {/* Dynamic Ambient Background Blobs & Brand Watermark */}
       <div className="app-ambient-bg">
         <div className="blob blob-1" />
         <div className="blob blob-2" />
+        <div className="ambient-brand-watermark" />
       </div>
 
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

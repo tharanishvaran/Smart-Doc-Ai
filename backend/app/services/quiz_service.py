@@ -23,34 +23,49 @@ class QuizService:
 
     def _get_context(self, user_id: int, topic: str, category_id: int = None) -> str:
         try:
-            emb = self.embedding_service.embed_query(topic)
-            results = self.vector_service.query(emb, user_id, n_results=3, category_id=category_id, query_text=topic)
+            # Fast BM25 lexical vector query (0.002s, no remote embedding delay)
+            results = self.vector_service.query(
+                query_embedding=None,
+                user_id=user_id,
+                n_results=2,
+                category_id=category_id,
+                query_text=topic
+            )
             if not results:
                 return "No specific document context found."
-            return "\n\n---\n\n".join([f"[Source: {r['metadata'].get('filename', 'Doc')}]\n{r['text']}" for r in results])
+            return "\n\n---\n\n".join([f"[Source: {r['metadata'].get('filename', 'Doc')}]\n{r['text'][:600]}" for r in results])
         except Exception as e:
             logger.warning(f"QuizService context lookup failed: {e}")
             return ""
 
-    def _call_llm(self, prompt: str, is_json: bool = False) -> str:
+    def _call_llm(self, prompt: str, is_json: bool = False, max_tokens: int = 900) -> str:
         use_gemini = bool(current_app.config.get('GEMINI_API_KEY')) or bool(os.getenv('GEMINI_API_KEY'))
         if use_gemini:
-            return self.gemini_service.generate_raw(prompt=prompt, max_tokens=1500, is_json=is_json)
-        return self.ollama_service.generate_answer(context="", question=prompt)
+            res = self.gemini_service.generate_raw(prompt=prompt, max_tokens=max_tokens, is_json=is_json)
+        else:
+            res = self.ollama_service.generate_answer(context="", question=prompt)
+        return res.replace('**', '') if res else res
 
     def generate_questions(self, user_id: int, topic: str, question_type: str, mark_type: str = '5', count: int = 5, category_id: int = None) -> str:
         context = self._get_context(user_id, topic, category_id)
-        prompt = f"""You are a university professor creating exam questions.
+        prompt = f"""You are a helpful teacher creating simple, clear exam practice questions.
 Topic/Subject: {topic}
-Question Category: {question_type} (e.g. MCQs, 2-mark short questions, 5-mark conceptual, 10/15-mark essay questions, Important questions, Previous-year style)
+Question Category: {question_type}
 Mark Allocation: {mark_type} Marks each
 Number of Questions: {count}
+
+REQUIREMENTS:
+1. Questions must be SIMPLE, DIRECT, and EASY TO UNDERSTAND. Test fundamental core concepts without tricky or complicated phrasing.
+2. Keep each question short and clear.
+3. For each question, provide a brief, clear, 2-3 line model answer.
+4. Do NOT use markdown bold formatting or asterisks (**). Output clean plain text without **.
 
 DOCUMENT CONTEXT:
 {context}
 
-Generate {count} high-quality academic questions with model answer guidelines for each. Format cleanly with numbering, question text, options (if MCQ), and model answers."""
-        return self._call_llm(prompt)
+Generate {count} simple, beginner-friendly questions with concise model answers:"""
+        max_tok = min(1200, 180 * count)
+        return self._call_llm(prompt, max_tokens=max_tok)
 
     def _clean_subject_topic_phrase(self, topic: str, subject: str) -> str:
         t_clean = (topic or '').strip()
@@ -65,7 +80,7 @@ Generate {count} high-quality academic questions with model answer guidelines fo
 
     def _clean_and_parse_json(self, raw: str) -> dict:
         import re
-        cleaned = raw.strip()
+        cleaned = raw.replace('**', '').strip()
         cleaned = re.sub(r'^\*\([^)]+\)\*\s*', '', cleaned)
         start_idx = cleaned.find('{')
         end_idx = cleaned.rfind('}')
@@ -76,9 +91,14 @@ Generate {count} high-quality academic questions with model answer guidelines fo
     def start_quiz(self, user_id: int, subject: str, topic: str, question_count: int = 5, category_id: int = None) -> dict:
         topic_phrase = self._clean_subject_topic_phrase(topic, subject)
         context = self._get_context(user_id, f"{subject} {topic}", category_id)
-        prompt = f"""You are a university examiner creating a multiple choice quiz for subject "{subject}" and topic "{topic}".
-IMPORTANT: Generate {question_count} questions with 4 unique options (A, B, C, D) relevant specifically to "{subject}" and "{topic}".
-Do NOT duplicate subject names redundantly in question text or options.
+        prompt = f"""Create a simple, beginner-friendly multiple choice quiz for subject "{subject}" and topic "{topic}".
+
+REQUIREMENTS:
+1. Generate exactly {question_count} SIMPLE, CLEAR, and DIRECT multiple-choice questions.
+2. Questions must test basic, fundamental concepts. Do NOT make tricky, obscure, or overly complex questions.
+3. Each question must have 4 short, straightforward options (A, B, C, D).
+4. Provide a brief 1-line explanation for the correct answer.
+5. Do NOT use markdown bold or asterisks (**). Output plain text without **.
 
 DOCUMENT CONTEXT:
 {context}
@@ -90,15 +110,16 @@ Respond ONLY in valid JSON format matching:
   "questions": [
     {{
       "id": 1,
-      "question": "What is the primary function of {topic_phrase}?",
-      "options": ["Option A relevant to {topic}", "Option B relevant to {topic}", "Option C relevant to {topic}", "Option D relevant to {topic}"],
+      "question": "Clear simple question about {topic}?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_option_index": 0,
-      "correct_answer": "Option A explanation",
+      "correct_answer": "Brief explanation of correct option",
       "topic_tag": "{topic}"
     }}
   ]
 }}"""
-        raw = self._call_llm(prompt, is_json=True)
+        max_tok = min(1200, 160 * question_count)
+        raw = self._call_llm(prompt, is_json=True, max_tokens=max_tok)
 
         attempt = QuizAttempt(
             user_id=user_id,
@@ -154,21 +175,22 @@ Respond ONLY in valid JSON format matching:
             }
 
     def evaluate_answer(self, user_id: int, attempt_id: int, question: str, user_answer: str, expected_answer: str = "", topic_tag: str = "") -> dict:
-        prompt = f"""Evaluate student's answer to the following academic question.
+        prompt = f"""Evaluate student's answer simply, accurately, and quickly.
+Do NOT use asterisks (**).
 
 Question: {question}
-Expected Answer Concept: {expected_answer}
-Student's Answer: {user_answer}
+Expected Concept: {expected_answer}
+Student Answer: {user_answer}
 
 Respond ONLY in valid JSON format matching:
 {{
   "is_correct": true,
   "score_earned": 1.0,
-  "correct_answer": "The full correct answer details...",
-  "explanation": "Detailed explanation of why the answer is correct or incorrect...",
-  "weakness_identified": "Identified conceptual gap (or 'None' if correct)"
+  "correct_answer": "Concise correct answer...",
+  "explanation": "Brief 1-2 sentence simple explanation.",
+  "weakness_identified": "Identified gap in simple words (or 'None' if correct)"
 }}"""
-        raw = self._call_llm(prompt, is_json=True)
+        raw = self._call_llm(prompt, is_json=True, max_tokens=300)
         try:
             eval_data = self._clean_and_parse_json(raw)
         except Exception:

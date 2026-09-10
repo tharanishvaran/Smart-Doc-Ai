@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ─── PondyTechFix Cyber Obsidian & Flame Orange Theme ────────────────── */
-:root, [data-theme="pondy-techfix"], [data-theme="dark-cyber"], [data-theme="dark"] {
-  /* Fonts matching PondyTechFix */
+/* ─── Modern Clean White & Electric Flame Orange Theme ────────────────── */
+:root, [data-theme="pondy-techfix"], [data-theme="white-orange"], [data-theme="light"], [data-theme="dark-cyber"], [data-theme="dark"] {
+  /* Fonts */
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
   --font-heading: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono: 'Fira Code', 'JetBrains Mono', monospace;
@@ -22,46 +22,46 @@
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 
-  /* PondyTechFix Cyber Obsidian Backgrounds */
-  --bg-app: #06080D;
-  --bg-surface: rgba(13, 18, 28, 0.85);
-  --bg-surface-hover: #141A28;
-  --bg-surface-elevated: #172030;
+  /* Modern Crisp Clean White Background System */
+  --bg-app: #F8FAFC;
+  --bg-surface: rgba(255, 255, 255, 0.92);
+  --bg-surface-hover: #F1F5F9;
+  --bg-surface-elevated: #FFFFFF;
 
-  /* PondyTechFix Electric Flame Orange Brand Palette */
+  /* Electric Flame Orange Brand Palette */
   --primary: #F95700;
-  --primary-hover: #FF6A1A;
-  --primary-gradient: linear-gradient(135deg, #EA580C 0%, #F95700 50%, #FB923C 100%);
-  --primary-glow: rgba(249, 87, 0, 0.38);
-  --primary-subtle: rgba(249, 87, 0, 0.12);
+  --primary-hover: #EA580C;
+  --primary-gradient: linear-gradient(135deg, #F95700 0%, #FB923C 100%);
+  --primary-glow: rgba(249, 87, 0, 0.28);
+  --primary-subtle: rgba(249, 87, 0, 0.08);
 
-  --accent: #FB923C;
-  --accent-gradient: linear-gradient(135deg, #EA580C 0%, #FB923C 100%);
-  --accent-glow: rgba(251, 146, 60, 0.3);
+  --accent: #EA580C;
+  --accent-gradient: linear-gradient(135deg, #F95700 0%, #FB923C 100%);
+  --accent-glow: rgba(249, 87, 0, 0.22);
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(249, 87, 0, 0.5);
+  --border: #E2E8F0;
+  --border-active: rgba(249, 87, 0, 0.45);
 
-  --text-main: #F8FAFC;
-  --text-muted: #94A3B8;
-  --text-dim: #64748B;
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --text-dim: #94A3B8;
 
-  --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 16px -4px rgba(249, 87, 0, 0.15);
-  --glass-bg: rgba(13, 18, 28, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-backdrop: blur(14px);
-  --blob-color-1: rgba(249, 87, 0, 0.12);
-  --blob-color-2: rgba(234, 88, 12, 0.08);
+  --card-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(226, 232, 240, 0.85);
+  --glass-backdrop: blur(16px);
+  --blob-color-1: rgba(249, 87, 0, 0.09);
+  --blob-color-2: rgba(251, 146, 60, 0.07);
 
   /* Status Colors */
   --danger: #EF4444;
-  --danger-glow: rgba(239, 68, 68, 0.25);
+  --danger-glow: rgba(239, 68, 68, 0.18);
   --success: #10B981;
-  --success-glow: rgba(16, 185, 129, 0.25);
+  --success-glow: rgba(16, 185, 129, 0.18);
   --warning: #F59E0B;
-  --warning-glow: rgba(245, 158, 11, 0.25);
-  --info: #0891B2;
-  --info-glow: rgba(8, 145, 178, 0.25);
+  --warning-glow: rgba(245, 158, 11, 0.18);
+  --info: #0284C7;
+  --info-glow: rgba(2, 132, 199, 0.18);
 }
 
 /* ─── Global Reset & Base Styles ──────────────────────────────────────── */
@@ -168,6 +168,39 @@ h4 { font-size: clamp(0.95rem, 2vw, 1.05rem); }
   0% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(60px, 40px) scale(1.1); }
   100% { transform: translate(-30px, 80px) scale(0.95); }
+}
+
+/* ─── Universal Transparent Brand Watermark Background ────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('/brand-bg-transparent.png');
+  background-position: center 48%;
+  background-repeat: no-repeat;
+  background-size: min(880px, 86vw);
+  opacity: 0.055;
+  pointer-events: none;
+  z-index: 0;
+  filter: saturate(1.15);
+  transform: translateZ(0);
+}
+
+.ambient-brand-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(880px, 86vw);
+  height: min(480px, 52vh);
+  background-image: url('/brand-bg-transparent.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.065;
+  pointer-events: none;
+  z-index: 1;
+  filter: saturate(1.2);
 }
 
 /* ─── Glassmorphic Card Utilities ─────────────────────────────────────── */
@@ -867,16 +900,25 @@ h4 { font-size: clamp(0.95rem, 2vw, 1.05rem); }
 }
 
 .auth-logo-icon {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   border-radius: var(--radius-md);
-  background: var(--primary-gradient);
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 4px 14px var(--primary-glow);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
+  overflow: hidden;
+  padding: 4px;
+  transition: transform var(--transition-normal), border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.auth-logo:hover .auth-logo-icon {
+  transform: scale(1.05);
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(249, 87, 0, 0.2);
 }
 
 .auth-logo-text {
@@ -979,69 +1021,105 @@ h4 { font-size: clamp(0.95rem, 2vw, 1.05rem); }
   flex-direction: column;
   align-items: center;
   width: 100%;
-  gap: 8px;
-}
-
-.google-btn-slot {
-  width: 100%;
-  min-height: 44px;
-  display: flex;
-  justify-content: center;
+  gap: 10px;
 }
 
 .google-btn-custom {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
   width: 100%;
-  height: 44px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface-elevated);
-  border: 1px solid var(--border);
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
   color: var(--text-main);
-  font-family: inherit;
-  font-size: 0.92rem;
+  font-family: var(--font-heading);
+  font-size: 0.94rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: all var(--transition-normal);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  outline: none;
+  user-select: none;
 }
 
-.google-btn-custom:hover {
-  background: var(--bg-surface);
-  border-color: var(--border-active);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.google-btn-custom:hover:not(:disabled) {
+  background: #FFFFFF;
+  border-color: var(--primary);
+  color: var(--text-main);
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(249, 87, 0, 0.16), 0 2px 6px rgba(15, 23, 42, 0.04);
 }
 
-.google-btn-unconfigured {
-  border: 1px dashed var(--border-active);
-  opacity: 0.9;
+.google-btn-custom:active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 2px 8px rgba(249, 87, 0, 0.12);
 }
 
-.google-setup-hint-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.google-btn-custom:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.google-btn-custom:disabled,
+.google-btn-loading {
+  opacity: 0.88;
+  cursor: wait;
+}
+
+.google-btn-text {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+}
+
+.google-btn-custom:hover:not(:disabled) .google-icon {
+  transform: scale(1.06);
+}
+
+.google-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(249, 87, 0, 0.2);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.google-origin-notice {
   width: 100%;
-  gap: 8px;
+  background: #FFFBEB;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-top: 4px;
 }
 
-.google-setup-hint {
-  font-size: 0.74rem;
-  color: var(--text-muted);
-}
-
-.google-setup-link-btn {
+.google-dev-inline-btn {
   background: none;
   border: none;
   color: var(--primary);
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-decoration: underline;
   cursor: pointer;
   padding: 0;
-  text-decoration: underline;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.google-dev-inline-btn:hover {
+  color: var(--primary-hover);
 }
 
 .google-setup-modal {

@@ -31,6 +31,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
+    sessionStorage.clear();
     const res = await authService.login({ email, password });
     const { user, access_token } = res.data.data;
     localStorage.setItem('access_token', access_token);
@@ -40,6 +41,7 @@ export function AuthProvider({ children }) {
   };
 
   const loginWithToken = async (token) => {
+    sessionStorage.clear();
     localStorage.setItem('access_token', token);
     const res = await authService.getMe();
     const currentUser = res.data.data.user;
@@ -48,8 +50,9 @@ export function AuthProvider({ children }) {
     return currentUser;
   };
 
-  const loginWithGoogle = async (credential) => {
-    const res = await authService.googleAuth(credential);
+  const loginWithGoogle = async (credentialOrPayload) => {
+    sessionStorage.clear();
+    const res = await authService.googleAuth(credentialOrPayload);
     const { user, access_token } = res.data.data;
     localStorage.setItem('access_token', access_token);
     localStorage.setItem('user', JSON.stringify(user));
@@ -58,6 +61,7 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (name, email, password) => {
+    sessionStorage.clear();
     const res = await authService.register({ name, email, password });
     const { user, access_token } = res.data.data;
     localStorage.setItem('access_token', access_token);
@@ -72,6 +76,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    sessionStorage.clear();
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     setUser(null);

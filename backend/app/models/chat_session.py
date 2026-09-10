@@ -21,12 +21,16 @@ class ChatSession(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'title': self.title,
-            'message_count': self.messages.count(),
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
         }
         if include_messages:
-            data['messages'] = [m.to_dict() for m in self.messages.all()]
+            # Query messages once; use len() instead of extra count() query; skip source joins
+            msgs = self.messages.all()
+            data['message_count'] = len(msgs)
+            data['messages'] = [m.to_dict(include_sources=False) for m in msgs]
+        else:
+            data['message_count'] = self.messages.count()
         return data
     
     def __repr__(self):

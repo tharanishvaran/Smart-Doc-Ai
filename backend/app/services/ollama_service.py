@@ -74,7 +74,7 @@ class OllamaService:
             if not answer:
                 raise RuntimeError('Ollama returned an empty response.')
             
-            return answer
+            return answer.replace('**', '').strip()
             
         except requests.exceptions.ConnectionError:
             raise RuntimeError(

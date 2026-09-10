@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { documentService } from '../services/documentService';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -14,13 +14,35 @@ import {
 } from 'lucide-react';
 import './QuestionAnalysis.css';
 
+const STORAGE_KEY = 'analysis_session_state';
+
+const getInitialState = () => {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
+
 export default function QuestionAnalysis() {
+  const savedState = useRef(getInitialState()).current;
+
   const [documents, setDocuments] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState(savedState?.selected || []);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(savedState?.result || null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        selected,
+        result,
+      }));
+    } catch {}
+  }, [selected, result]);
 
   useEffect(() => {
     documentService.getAll()

@@ -3,7 +3,10 @@ import api from './api';
 export const authService = {
   register: (data) => api.post('/auth/register', data),
   login: (data) => api.post('/auth/login', data),
-  googleAuth: (credential) => api.post('/auth/google', { credential }),
+  googleAuth: (payload) => {
+    const data = typeof payload === 'string' ? { credential: payload } : payload;
+    return api.post('/auth/google', data);
+  },
   getMe: () => api.get('/auth/me'),
   uploadAvatar: (payload) => {
     if (payload instanceof FormData) {
