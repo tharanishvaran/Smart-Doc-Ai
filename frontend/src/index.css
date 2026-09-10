@@ -603,9 +603,9 @@ body::before {
   font-size: 0.88rem;
   font-weight: 600;
   border-radius: var(--radius-md);
-  background: var(--bg-surface-elevated);
-  border: 1.5px solid var(--border);
-  color: var(--text-main);
+  background: var(--bg-surface-elevated, #FFFFFF);
+  border: 1.5px solid var(--border, #E2E8F0);
+  color: var(--text-main, #0F172A);
   cursor: pointer;
   transition: all var(--transition-fast);
   display: inline-flex;
@@ -618,27 +618,32 @@ body::before {
 .mode-pill svg {
   flex-shrink: 0;
   transition: stroke 0.15s ease, color 0.15s ease;
-  color: var(--primary);
-  stroke: var(--primary);
+  color: var(--text-muted, #64748B);
+  stroke: var(--text-muted, #64748B);
 }
 .mode-pill:hover {
   background: var(--bg-surface-hover);
-  color: var(--primary);
-  border-color: var(--primary);
+  color: var(--primary, #F95700);
+  border-color: var(--primary, #F95700);
   transform: translateY(-1px);
 }
+.mode-pill:hover svg {
+  color: var(--primary, #F95700);
+  stroke: var(--primary, #F95700);
+}
 .mode-pill.active {
-  background: var(--primary-gradient, linear-gradient(135deg, #F95700 0%, #EA580C 100%)) !important;
-  border-color: transparent !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 14px var(--primary-glow) !important;
+  background: rgba(249, 87, 0, 0.12) !important;
+  border: 2px solid var(--primary, #F95700) !important;
+  color: var(--primary, #F95700) !important;
+  box-shadow: 0 2px 12px rgba(249, 87, 0, 0.18) !important;
   font-weight: 700 !important;
 }
 .mode-pill.active svg,
 .mode-pill.active span,
+.mode-pill.active strong,
 .mode-pill.active * {
-  color: #FFFFFF !important;
-  stroke: #FFFFFF !important;
+  color: var(--primary, #F95700) !important;
+  stroke: var(--primary, #F95700) !important;
 }
 
 @media (max-width: 768px) {

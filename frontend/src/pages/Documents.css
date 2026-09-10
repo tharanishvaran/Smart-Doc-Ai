@@ -233,9 +233,10 @@
 }
 
 .filter-chip.active {
-  background: var(--primary-subtle);
-  color: var(--primary);
-  border-color: var(--border-active);
+  background: rgba(249, 87, 0, 0.12);
+  color: var(--primary, #F95700);
+  border: 1.5px solid var(--primary, #F95700);
+  font-weight: 700;
 }
 
 /* Document Grid */

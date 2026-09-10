@@ -204,16 +204,17 @@
 
 .explanation-mode-bar .mode-pill.active,
 .chat-container .mode-pill.active {
-  background: var(--primary-gradient) !important;
-  color: #ffffff !important;
-  border-color: transparent !important;
-  box-shadow: 0 2px 10px rgba(249, 87, 0, 0.3) !important;
+  background: rgba(249, 87, 0, 0.12) !important;
+  color: var(--primary, #F95700) !important;
+  border: 2px solid var(--primary, #F95700) !important;
+  box-shadow: 0 2px 10px rgba(249, 87, 0, 0.2) !important;
+  font-weight: 700 !important;
 }
 
 .explanation-mode-bar .mode-pill.active svg,
 .chat-container .mode-pill.active svg {
-  stroke: #ffffff !important;
-  color: #ffffff !important;
+  stroke: var(--primary, #F95700) !important;
+  color: var(--primary, #F95700) !important;
 }
 
 /* ─── Messages Thread — GPU-accelerated scroll ──────────────────── */
