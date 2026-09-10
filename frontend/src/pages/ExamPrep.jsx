@@ -302,7 +302,7 @@ export default function ExamPrep() {
             </h4>
             {importantTopicsResult.high_priority?.map((t, i) => (
               <div key={i} style={{ marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                <strong>{t.topic}</strong>
+                <strong style={{ color: 'var(--text-main)', fontSize: '0.96rem', display: 'block' }}>{t.topic}</strong>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{t.reason}</p>
               </div>
             ))}
@@ -314,7 +314,7 @@ export default function ExamPrep() {
             </h4>
             {importantTopicsResult.medium_priority?.map((t, i) => (
               <div key={i} style={{ marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                <strong>{t.topic}</strong>
+                <strong style={{ color: 'var(--text-main)', fontSize: '0.96rem', display: 'block' }}>{t.topic}</strong>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{t.reason}</p>
               </div>
             ))}
@@ -326,7 +326,7 @@ export default function ExamPrep() {
             </h4>
             {importantTopicsResult.low_priority?.map((t, i) => (
               <div key={i} style={{ marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
-                <strong>{t.topic}</strong>
+                <strong style={{ color: 'var(--text-main)', fontSize: '0.96rem', display: 'block' }}>{t.topic}</strong>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>{t.reason}</p>
               </div>
             ))}

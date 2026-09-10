@@ -599,13 +599,13 @@ body::before {
   max-width: 100%;
 }
 .mode-pill {
-  padding: 9px 16px;
-  font-size: 0.86rem;
+  padding: 9px 18px;
+  font-size: 0.88rem;
   font-weight: 600;
   border-radius: var(--radius-md);
   background: var(--bg-surface-elevated);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  color: var(--text-main);
   cursor: pointer;
   transition: all var(--transition-fast);
   display: inline-flex;
@@ -615,18 +615,30 @@ body::before {
   max-width: 100%;
   text-align: left;
 }
+.mode-pill svg {
+  flex-shrink: 0;
+  transition: stroke 0.15s ease, color 0.15s ease;
+  color: var(--primary);
+  stroke: var(--primary);
+}
 .mode-pill:hover {
   background: var(--bg-surface-hover);
-  color: var(--text-main);
-  border-color: var(--border-active);
+  color: var(--primary);
+  border-color: var(--primary);
   transform: translateY(-1px);
 }
 .mode-pill.active {
-  background: var(--primary-gradient);
-  border-color: transparent;
-  color: #ffffff !important;
-  box-shadow: 0 4px 14px var(--primary-glow);
-  font-weight: 700;
+  background: var(--primary-gradient, linear-gradient(135deg, #F95700 0%, #EA580C 100%)) !important;
+  border-color: transparent !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px var(--primary-glow) !important;
+  font-weight: 700 !important;
+}
+.mode-pill.active svg,
+.mode-pill.active span,
+.mode-pill.active * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
 @media (max-width: 768px) {
