@@ -60,13 +60,36 @@ def create_app():
     app.register_blueprint(exam_prep_bp, url_prefix='/api/exam-prep')
     app.register_blueprint(quiz_bp, url_prefix='/api/quiz')
 
-    @app.route('/', methods=['GET', 'HEAD'])
-    def root_health():
-        return {'status': 'online', 'service': 'SmartDoc AI Backend', 'version': '2.1', 'docs': '/api'}
-
     @app.route('/api/health', methods=['GET'])
     def api_health():
-        return {'status': 'healthy', 'rag_engine': 'ready'}
+        return {'status': 'healthy', 'rag_engine': 'ready', 'service': 'SmartDoc AI Unified'}
+
+    # Serve built React frontend in production (unified full-stack deployment)
+    from flask import send_from_directory
+    frontend_dist = os.path.abspath(os.path.join(_backend_root, '..', 'frontend', 'dist'))
+
+    @app.route('/', defaults={'path': ''}, methods=['GET', 'HEAD'])
+    @app.route('/<path:path>', methods=['GET', 'HEAD'])
+    def serve_frontend(path):
+        # Do not capture API routes
+        if path.startswith('api/') or path == 'api':
+            return {'error': 'API endpoint not found', 'path': f'/{path}'}, 404
+
+        # Serve static file if it exists in dist/ (e.g. assets/*.js, *.css, *.png, favicon.ico)
+        target_file = os.path.join(frontend_dist, path)
+        if path and os.path.isfile(target_file):
+            return send_from_directory(frontend_dist, path)
+
+        # SPA fallback: serve index.html for all client routes (/login, /chat, /quiz, /exam-prep, etc.)
+        index_file = os.path.join(frontend_dist, 'index.html')
+        if os.path.isfile(index_file):
+            return send_from_directory(frontend_dist, 'index.html')
+
+        return {
+            'status': 'online',
+            'service': 'SmartDoc AI Unified Server',
+            'message': 'Frontend build not found at frontend/dist. Please run npm run build.'
+        }, 200
 
 
     # Register global error handlers

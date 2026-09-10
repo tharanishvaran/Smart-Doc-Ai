@@ -1,10 +1,10 @@
 services:
-  # 1. Backend Web Service (100% Free - No Credit Card Required)
+  # Unified Full-Stack Web Service (Frontend + Backend in ONE Single Service)
   - type: web
-    name: smartdoc-backend
+    name: Rag-Project-2.0
     env: python
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: npm --prefix frontend install && npm --prefix frontend run build && pip install -r backend/requirements.txt
     startCommand: cd backend && gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120 run:app
     envVars:
       - key: FLASK_ENV
@@ -17,15 +17,3 @@ services:
         sync: false
       - key: DATABASE_URL
         value: sqlite:///app.db
-
-  # 2. Frontend Static Site (100% Free)
-  - type: web
-    name: smartdoc-frontend
-    env: static
-    plan: free
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
