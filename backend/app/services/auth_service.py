@@ -41,7 +41,10 @@ class AuthService:
         
         if not user:
             raise ValueError('Invalid email or password.')
-        
+
+        if not user.password_hash:
+            raise ValueError('This account was created using Google Sign-In. Please click "Continue with Google" to sign in.')
+
         if not bcrypt.check_password_hash(user.password_hash, password):
             raise ValueError('Invalid email or password.')
         
