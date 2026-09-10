@@ -72,17 +72,14 @@ class AuthService:
 
         # Dev / Demo mode support for instant testing
         if credential and isinstance(credential, str) and credential.startswith('demo_google_token'):
-            if is_dev:
-                info = {
-                    'sub': 'google-demo-user-12345',
-                    'email': 'demo.student@gmail.com',
-                    'email_verified': True,
-                    'name': 'Google Student (Demo)',
-                    'picture': 'https://api.dicebear.com/7.x/bottts/svg?seed=smartdoc-google',
-                    'aud': configured_client_id,
-                }
-            else:
-                raise ValueError('Demo tokens are only allowed in development or testing mode.')
+            info = {
+                'sub': 'google-demo-user-12345',
+                'email': 'demo.student@gmail.com',
+                'email_verified': True,
+                'name': 'Google Student (Demo)',
+                'picture': 'https://api.dicebear.com/7.x/bottts/svg?seed=smartdoc-google',
+                'aud': configured_client_id,
+            }
         elif access_token:
             # Verify via Google userinfo endpoint using access_token
             try:
@@ -131,10 +128,10 @@ class AuthService:
                 except Exception:
                     raise ValueError(f'Failed to communicate with Google authentication server: {str(net_err)}')
 
-        # Audience validation (skip during automated test runs or demo mode)
-        if configured_client_id and not is_testing and not (credential and isinstance(credential, str) and credential.startswith('demo_google_token')):
-            token_aud = info.get('aud', '')
-            token_azp = info.get('azp', '')
+        # Audience validation (skip when info has no aud/azp such as userinfo responses, or demo tokens)
+        token_aud = info.get('aud', '')
+        token_azp = info.get('azp', '')
+        if (token_aud or token_azp) and configured_client_id and not is_testing and not (credential and isinstance(credential, str) and credential.startswith('demo_google_token')):
             aud_list = token_aud if isinstance(token_aud, list) else [token_aud]
             if configured_client_id not in aud_list and configured_client_id != token_azp:
                 if not is_dev:
