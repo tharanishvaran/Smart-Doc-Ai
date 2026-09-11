@@ -44,7 +44,7 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       if (!err.response) {
-        setError('Network Error: Cannot connect to Backend API. Ensure your backend server is running and VITE_API_BASE_URL is set to an HTTPS URL.');
+        setError('Network Error: Cannot connect to Backend server. Please ensure your backend is started (run.bat or python run.py on port 5000).');
       } else {
         setError(err.response?.data?.error || 'Login failed. Please verify email and password.');
       }
