@@ -151,16 +151,16 @@ export function AdjustFrameModal({ imageSrc, onClose, onSave, uploading }) {
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 999999,
-        background: 'rgba(9, 13, 22, 0.88)',
-        backdropFilter: 'blur(12px)',
+        zIndex: 1000050,
+        background: 'rgba(9, 13, 22, 0.92)',
+        backdropFilter: 'blur(14px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16
       }}
     >
-      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(440px, 94vw)', padding: '20px 16px', borderRadius: 20, zIndex: 1000000 }}>
+      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(440px, 94vw)', padding: '20px 16px', borderRadius: 20, zIndex: 1000060 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-main)', fontSize: '1.05rem' }}>
             <Camera size={18} className="text-primary" /> Adjust Profile Frame
@@ -243,7 +243,7 @@ export function ViewProfileModal({ user, onClose, onChangePhoto }) {
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: 999999,
+        zIndex: 999990,
         background: 'rgba(9, 13, 22, 0.88)',
         backdropFilter: 'blur(12px)',
         display: 'flex',
@@ -252,7 +252,7 @@ export function ViewProfileModal({ user, onClose, onChangePhoto }) {
         padding: 16
       }}
     >
-      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 94vw)', padding: '24px 16px', borderRadius: 20, textAlign: 'center', position: 'relative', zIndex: 1000000 }}>
+      <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 94vw)', padding: '24px 16px', borderRadius: 20, textAlign: 'center', position: 'relative', zIndex: 999995 }}>
         <button 
           className="btn btn-ghost btn-sm" 
           onClick={onClose} 

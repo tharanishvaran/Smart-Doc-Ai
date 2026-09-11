@@ -29,6 +29,7 @@ export default function Profile() {
 
   const handleFileSelected = (file) => {
     if (!file) return;
+    setShowViewModal(false); // Dismiss full view modal immediately so chosen image is never covered
     const reader = new FileReader();
     reader.onload = (e) => {
       setRawImageSrc(e.target.result);
@@ -38,6 +39,11 @@ export default function Profile() {
       setMsg({ text: 'Failed to read image file from device.', type: 'error' });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCancelAdjust = () => {
+    setShowAdjustModal(false);
+    setRawImageSrc(null);
   };
 
   const handleSaveCroppedAvatar = async (croppedDataUrl) => {
@@ -268,22 +274,25 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Frame Adjustment Modal */}
+      {/* Frame Adjustment Modal (Selected image shown directly) */}
       {showAdjustModal && (
         <AdjustFrameModal
           imageSrc={rawImageSrc}
-          onClose={() => setShowAdjustModal(false)}
+          onClose={handleCancelAdjust}
           onSave={handleSaveCroppedAvatar}
           uploading={uploading}
         />
       )}
 
       {/* View Profile Image Lightbox Modal */}
-      {showViewModal && (
+      {showViewModal && !showAdjustModal && (
         <ViewProfileModal
           user={user}
           onClose={() => setShowViewModal(false)}
-          onChangePhoto={() => fileRef.current?.click()}
+          onChangePhoto={() => {
+            setShowViewModal(false);
+            fileRef.current?.click();
+          }}
         />
       )}
     </div>
