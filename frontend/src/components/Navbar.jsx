@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import './Navbar.css';
 
 import { ViewProfileModal } from './ProfileImageModal';
@@ -43,14 +43,6 @@ export default function Navbar({ onToggleSidebar }) {
         </div>
 
         <div className="navbar-right">
-
-
-          {/* Notifications Mock Bell */}
-          <button className="navbar-icon-btn btn btn-ghost btn-sm" title="Notifications">
-            <Bell size={18} />
-            <span className="notification-badge" />
-          </button>
-
           {/* User Pill */}
           <div className="navbar-user-pill" onClick={() => setShowViewModal(true)} style={{ cursor: 'pointer' }} title="Click to view profile photo">
             <UserAvatar 
