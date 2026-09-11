@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { documentService } from '../services/documentService';
 import api from '../services/api';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SectionLoadingCard from '../components/SectionLoadingCard';
 import { 
   Search, 
   Sparkles, 
@@ -88,10 +89,8 @@ export default function QuestionAnalysis() {
           <p className="panel-subtitle">Select question papers or lecture notes to extract repeated exam questions.</p>
 
           {loading ? (
-            <div className="doc-checklist">
-              {[1, 2, 3].map(n => (
-                <div key={n} className="doc-check-item glass-card skeleton-card" style={{ height: 48 }} />
-              ))}
+            <div style={{ padding: '8px 0' }}>
+              <SectionLoadingCard theme="analysis" mode="initial" title="Scanning Document Repositories..." />
             </div>
           ) : documents.length === 0 ? (
             <div className="empty-checklist">
@@ -155,7 +154,15 @@ export default function QuestionAnalysis() {
             </div>
           )}
 
-          {analyzing && <LoadingSpinner variant="bar" message="Extracting exam patterns & frequency clusters..." />}
+          {analyzing && (
+            <div style={{ margin: '16px 0' }}>
+              <SectionLoadingCard 
+                theme="analysis" 
+                mode="action" 
+                title="Deep RAG Paper Pattern Mining & Prediction..." 
+              />
+            </div>
+          )}
 
           {result && (
             <div className="results-content animate-fade-in">

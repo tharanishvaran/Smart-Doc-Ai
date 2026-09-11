@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { examPrepService } from '../services/examPrepService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SectionLoadingCard from '../components/SectionLoadingCard';
 import { 
   Target, 
   Calendar, 
@@ -255,7 +256,21 @@ export default function ExamPrep() {
         </div>
       </div>
 
-      {loading && <LoadingSpinner variant="bar" message="AI is analyzing syllabus context and generating insights..." />}
+      {loading && (
+        <div style={{ margin: '20px 0' }}>
+          <SectionLoadingCard 
+            theme="examprep" 
+            mode="action" 
+            title={
+              activeTab === 'strategy' ? 'Synthesizing Personalized Exam Preparation Strategy...' :
+              activeTab === 'planner' ? `Formulating ${daysRemaining}-Day Adaptive AI Study Schedule...` :
+              activeTab === 'topics' ? 'Mining Priority & High-Yield Exam Topics...' :
+              activeTab === 'papers' ? 'Analyzing Historical Question Paper Trends...' :
+              'Predicting High-Probability Exam Questions...'
+            }
+          />
+        </div>
+      )}
 
       {/* Results Display */}
       {activeTab === 'strategy' && strategyResult && (

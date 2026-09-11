@@ -46,12 +46,12 @@ start "SmartDoc AI - Frontend (:3000)" cmd /k "title SmartDoc AI - Frontend && c
 
 echo.
 echo ======================================================================
-echo   Backend is running at:  http://localhost:5000
+echo   Backend is running at:  http://127.0.0.1:5000
 echo   Frontend is running at: http://localhost:3000
 echo ======================================================================
 echo.
 echo Waiting for servers to initialize...
-timeout /t 3 /nobreak >nul
+timeout /t 5 /nobreak >nul
 
 echo Opening browser at http://localhost:3000 ...
 start http://localhost:3000

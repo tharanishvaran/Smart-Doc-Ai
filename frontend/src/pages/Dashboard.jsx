@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { quizService } from '../services/quizService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SectionLoadingCard from '../components/SectionLoadingCard';
 import { 
   FileText, 
   FolderOpen, 
@@ -43,7 +44,7 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <LoadingSpinner message="Retrieving Student AI Dashboard & Performance Metrics..." />;
+  if (loading) return <SectionLoadingCard theme="dashboard" mode="initial" fullPage />;
   if (error) return <div className="alert alert-error">{error}</div>;
 
   const { stats, recent_documents, recent_sessions, documents_by_category } = data;

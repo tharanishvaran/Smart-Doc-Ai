@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { quizService } from '../services/quizService';
 import LoadingSpinner from '../components/LoadingSpinner';
+import SectionLoadingCard from '../components/SectionLoadingCard';
 import { 
   Award, 
   HelpCircle, 
@@ -223,7 +224,9 @@ export default function QuizMode() {
       {/* Mode 1: Interactive AI Quiz */}
       {activeTab === 'interactive' && (
         <>
-          {!quizSession ? (
+          {loading && !quizSession ? (
+            <SectionLoadingCard theme="quiz" mode="action" title="Synthesizing AI Adaptive Quiz with Gemini..." />
+          ) : !quizSession ? (
             <div className="glass-card" style={{ padding: 20, maxWidth: 640 }}>
               <h3 style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Sparkles size={20} className="text-primary" /> Start AI Adaptive Quiz
@@ -358,6 +361,21 @@ export default function QuizMode() {
                 </div>
               )}
 
+              {evaluating && (
+                <div style={{ marginBottom: 18 }}>
+                  <SectionLoadingCard 
+                    theme="quiz" 
+                    mode="action" 
+                    title="Evaluating Answer with Grounded RAG Sources..." 
+                    steps={[
+                      { label: 'Comparing Response against Ground Truth...', detail: 'Verifying conceptual accuracy and key terminology' },
+                      { label: 'Assessing Understanding & Depth...', detail: 'Checking for subtle nuances and misconceptions' },
+                      { label: 'Formulating Actionable Weakness Feedback...', detail: 'Compiling textbook citations and explanations' }
+                    ]}
+                  />
+                </div>
+              )}
+
               {!evalResult ? (
                 <button 
                   className="btn btn-primary" 
@@ -466,7 +484,11 @@ export default function QuizMode() {
             <span>Generate Question Set</span>
           </button>
 
-          {loading && <LoadingSpinner variant="bar" message="Generating questions from syllabus notes..." />}
+          {loading && (
+            <div style={{ marginBottom: 24 }}>
+              <SectionLoadingCard theme="quiz" mode="action" title="Synthesizing Practice Exam Questions with Gemini..." />
+            </div>
+          )}
 
           {generatedText && (
             <div className="glass-card animate-fade-in" style={{ padding: 20, wordBreak: 'break-word', overflowWrap: 'break-word' }}>

@@ -40,7 +40,7 @@ class Config:
         }
     elif _raw_db_url.startswith('mysql'):
         import ssl as _ssl
-        _connect_args = {'connect_timeout': 3}
+        _connect_args = {'connect_timeout': 20}
         if 'tidb' in _raw_db_url.lower() or 'ssl' in _raw_db_url.lower() or 'aws' in _raw_db_url.lower():
             try:
                 _connect_args['ssl'] = _ssl.create_default_context()

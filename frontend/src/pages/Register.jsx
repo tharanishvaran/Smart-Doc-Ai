@@ -20,7 +20,14 @@ export default function Register() {
       await register(form.name, form.email, form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      if (!err.response) {
+        setError('Cannot connect to backend server. Please verify python backend is running on port 5000 (python run.py).');
+      } else if (err.response.status === 502 || err.response.status === 503) {
+        setError('Backend server is waking up or offline (HTTP ' + err.response.status + '). If running on localhost, make sure "python run.py" is running. If on Render, the free server is waking from sleep — please wait ~30 seconds and retry.');
+      } else {
+        const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Registration failed. Please try again.';
+        setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
     } finally {
       setLoading(false);
     }

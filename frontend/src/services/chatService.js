@@ -1,6 +1,7 @@
 import api from './api';
 
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+const envUrl = (import.meta.env.VITE_API_BASE_URL || '').trim();
+const rawBaseUrl = (envUrl && !envUrl.includes('localhost:5000')) ? envUrl : '/api';
 const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '');
 
 export const chatService = {
@@ -43,31 +44,56 @@ export const chatService = {
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let doneDispatched = false;
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    const parseLine = (line) => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data: ')) return;
+      const jsonStr = trimmed.slice(6).trim();
+      if (!jsonStr || jsonStr === '[DONE]') return;
+      try {
+        const event = JSON.parse(jsonStr);
+        if (event.type === 'chunk') {
+          onChunk?.(event.text);
+        } else if (event.type === 'done') {
+          doneDispatched = true;
+          onDone?.(event);
+        } else if (event.type === 'error') {
+          onError?.(event.message);
+        }
+      } catch (_) { /* ignore malformed SSE lines */ }
+    };
 
-      // Process all complete SSE lines in buffer
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // keep incomplete last line
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data: ')) continue;
-        const jsonStr = trimmed.slice(6).trim();
-        if (!jsonStr || jsonStr === '[DONE]') continue;
-        try {
-          const event = JSON.parse(jsonStr);
-          if (event.type === 'chunk') {
-            onChunk?.(event.text);
-          } else if (event.type === 'done') {
-            onDone?.(event);
-          } else if (event.type === 'error') {
-            onError?.(event.message);
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Flush any final bytes from the decoder
+          buffer += decoder.decode();
+          if (buffer.trim()) {
+            const finalLines = buffer.split('\n');
+            for (const l of finalLines) {
+              parseLine(l);
+            }
           }
-        } catch (_) { /* ignore malformed SSE lines */ }
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process all complete SSE lines in buffer
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // keep incomplete last line
+
+        for (const line of lines) {
+          parseLine(line);
+        }
+      }
+    } catch (err) {
+      onError?.('Stream interrupted: ' + err.message);
+    } finally {
+      if (!doneDispatched) {
+        doneDispatched = true;
+        onDone?.({ sources: [] });
       }
     }
   },

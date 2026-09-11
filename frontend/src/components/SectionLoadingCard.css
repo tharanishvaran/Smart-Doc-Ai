@@ -1,0 +1,499 @@
+/* ─── Section Loading Card & High-Tech Animations ────────────────── */
+
+.section-loader-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  width: 100%;
+  min-height: 280px;
+}
+
+.section-loader-wrapper.full-page-mode {
+  min-height: calc(100vh - 140px);
+}
+
+.section-loader-card {
+  position: relative;
+  width: 100%;
+  max-width: 580px;
+  padding: 26px 28px !important;
+  border-radius: var(--radius-xl) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  overflow: hidden;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--border);
+  transition: transform var(--transition-normal);
+}
+
+/* ─── Holographic Laser Top Sweep ──────────────────────────────── */
+.section-laser-sweep {
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 50%;
+  height: 2.5px;
+  animation: laserSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 2;
+}
+
+@keyframes laserSweep {
+  0% { left: -50%; }
+  100% { left: 150%; }
+}
+
+/* ─── Theme Palettes & Ambient Glows ────────────────────────────── */
+
+/* 1. Dashboard Theme (Orange + Electric Cyan) */
+.theme-dashboard {
+  border-color: rgba(249, 87, 0, 0.3) !important;
+  background: linear-gradient(135deg, rgba(249, 87, 0, 0.04) 0%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+.theme-dashboard .section-laser-sweep {
+  background: linear-gradient(90deg, transparent, #F95700, #00D8FF, transparent);
+}
+.theme-dashboard .section-status-badge {
+  background: rgba(249, 87, 0, 0.09);
+  color: #F95700;
+  border: 1px solid rgba(249, 87, 0, 0.3);
+}
+
+/* 2. Quiz Mode Theme (Emerald + Cyan/Amber) */
+.theme-quiz {
+  border-color: rgba(16, 185, 129, 0.32) !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+.theme-quiz .section-laser-sweep {
+  background: linear-gradient(90deg, transparent, #10B981, #06B6D4, transparent);
+}
+.theme-quiz .section-status-badge {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.theme-quiz-bubble {
+  color: #059669 !important;
+  background: #ecfdf5 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+.theme-quiz .stepper-node.active .stepper-dot {
+  background: #10B981 !important;
+  box-shadow: 0 0 10px #10B981 !important;
+}
+.theme-quiz .stepper-connector.active {
+  background: linear-gradient(90deg, #10B981, #06B6D4) !important;
+}
+.theme-quiz .eq-bar {
+  background: linear-gradient(180deg, #10B981 0%, #06B6D4 100%) !important;
+}
+
+/* 3. Question Analysis Theme (Sapphire + Violet/Cyan) */
+.theme-analysis {
+  border-color: rgba(59, 130, 246, 0.32) !important;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+.theme-analysis .section-laser-sweep {
+  background: linear-gradient(90deg, transparent, #3B82F6, #8B5CF6, transparent);
+}
+.theme-analysis .section-status-badge {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563EB;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+.theme-analysis-bubble {
+  color: #2563EB !important;
+  background: #eff6ff !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+.theme-analysis .stepper-node.active .stepper-dot {
+  background: #3B82F6 !important;
+  box-shadow: 0 0 10px #3B82F6 !important;
+}
+.theme-analysis .stepper-connector.active {
+  background: linear-gradient(90deg, #3B82F6, #8B5CF6) !important;
+}
+.theme-analysis .eq-bar {
+  background: linear-gradient(180deg, #3B82F6 0%, #8B5CF6 100%) !important;
+}
+
+/* 4. Exam Prep Theme (Solar Amber + Primary Orange) */
+.theme-examprep {
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(255, 255, 255, 0.96) 100%) !important;
+}
+.theme-examprep .section-laser-sweep {
+  background: linear-gradient(90deg, transparent, #F59E0B, #EF4444, transparent);
+}
+.theme-examprep .section-status-badge {
+  background: rgba(245, 158, 11, 0.1);
+  color: #D97706;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.theme-examprep-bubble {
+  color: #D97706 !important;
+  background: #fffbeb !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+.theme-examprep .stepper-node.active .stepper-dot {
+  background: #F59E0B !important;
+  box-shadow: 0 0 10px #F59E0B !important;
+}
+.theme-examprep .stepper-connector.active {
+  background: linear-gradient(90deg, #F59E0B, #EF4444) !important;
+}
+.theme-examprep .eq-bar {
+  background: linear-gradient(180deg, #F59E0B 0%, #EF4444 100%) !important;
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] .section-loader-card {
+  background: rgba(13, 18, 28, 0.94) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(249, 87, 0, 0.08) !important;
+}
+[data-theme="dark"] .theme-quiz-bubble {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34D399 !important;
+}
+[data-theme="dark"] .theme-analysis-bubble {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60A5FA !important;
+}
+[data-theme="dark"] .theme-examprep-bubble {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #FBBF24 !important;
+}
+
+/* ─── Header Elements ──────────────────────────────────────────── */
+.section-loader-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-logo-orbit {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orbit-spin-halo {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 18px;
+  border: 2px solid transparent;
+  border-top-color: var(--primary);
+  border-right-color: #00D8FF;
+  animation: orbitSpin 2.4s linear infinite;
+}
+
+@keyframes orbitSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.section-logo-bubble {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  animation: logoFloat 3.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .section-logo-bubble {
+  background: rgba(20, 26, 40, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.section-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.section-themed-icon {
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}
+
+.section-loader-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.section-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.section-spin-sparkle {
+  animation: spinSparkle 3s linear infinite;
+}
+
+@keyframes spinSparkle {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.section-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.live-ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  animation: pingDot 1s infinite alternate;
+}
+
+@keyframes pingDot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #10B981; }
+}
+
+.section-loader-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* ─── 3-Step Live Pipeline Stepper ──────────────────────────────── */
+.section-pipeline-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 6px;
+}
+
+.stepper-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.45;
+  transition: all 0.35s ease;
+  min-width: 0;
+}
+
+.stepper-node.active {
+  opacity: 1;
+}
+
+.stepper-node.done {
+  opacity: 0.85;
+}
+
+.stepper-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.stepper-node.active .stepper-dot {
+  background: #F95700;
+  box-shadow: 0 0 10px #F95700;
+  animation: stepDotPulse 1s infinite alternate;
+}
+
+.stepper-node.done .stepper-dot {
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+@keyframes stepDotPulse {
+  0% { transform: scale(1); box-shadow: 0 0 6px rgba(249, 87, 0, 0.5); }
+  100% { transform: scale(1.35); box-shadow: 0 0 14px rgba(249, 87, 0, 0.9); }
+}
+
+.stepper-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stepper-node.active .stepper-text {
+  color: var(--text-main);
+}
+
+.stepper-connector {
+  flex: 1;
+  height: 2px;
+  background: rgba(150, 150, 150, 0.18);
+  position: relative;
+  overflow: hidden;
+  border-radius: 99px;
+  min-width: 14px;
+}
+
+.stepper-connector.active {
+  background: linear-gradient(90deg, #10B981, #F95700);
+}
+
+.stepper-connector.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #fff, transparent);
+  animation: connectorShine 1.4s infinite;
+}
+
+@keyframes connectorShine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* ─── Neural Waveform & Status Detail ──────────────────────────── */
+.section-loader-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.section-neural-equalizer {
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.eq-bar {
+  width: 3.5px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #F95700 0%, #00D8FF 100%);
+  animation: eqWave 1.2s ease-in-out infinite alternate;
+}
+
+.eq-bar.eq-1 { height: 8px; animation-delay: 0.05s; }
+.eq-bar.eq-2 { height: 18px; animation-delay: 0.2s; }
+.eq-bar.eq-3 { height: 13px; animation-delay: 0.35s; }
+.eq-bar.eq-4 { height: 22px; animation-delay: 0.1s; }
+.eq-bar.eq-5 { height: 15px; animation-delay: 0.4s; }
+.eq-bar.eq-6 { height: 20px; animation-delay: 0.25s; }
+.eq-bar.eq-7 { height: 10px; animation-delay: 0.15s; }
+
+@keyframes eqWave {
+  0% { height: 4px; opacity: 0.35; transform: scaleY(0.5); }
+  100% { height: 24px; opacity: 1; transform: scaleY(1.2); }
+}
+
+.section-step-status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.current-step-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: linear-gradient(90deg, var(--text-main) 0%, var(--primary) 50%, var(--text-main) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShimmer 2.8s linear infinite;
+}
+
+@keyframes textShimmer {
+  to { background-position: 200% center; }
+}
+
+.current-step-detail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* ─── Shimmer Bars Track ───────────────────────────────────────── */
+.section-shimmer-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.shimmer-line {
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(150, 150, 150, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(249, 87, 0, 0.35), rgba(0, 216, 255, 0.3), transparent);
+  animation: lineShimmer 1.6s infinite;
+}
+
+@keyframes lineShimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.shimmer-line.line-wide { width: 95%; }
+.shimmer-line.line-mid { width: 78%; }
+.shimmer-line.line-slim { width: 52%; }

@@ -44,9 +44,12 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       if (!err.response) {
-        setError('Network Error: Cannot connect to Backend server. Please ensure your backend is started (run.bat or python run.py on port 5000).');
+        setError('Cannot connect to backend server. Please verify python backend is running on port 5000 (python run.py).');
+      } else if (err.response.status === 502 || err.response.status === 503) {
+        setError('Backend server is waking up or offline (HTTP ' + err.response.status + '). If running on localhost, make sure "python run.py" is running. If on Render, the free server is waking from sleep — please wait ~30 seconds and click Sign In again.');
       } else {
-        setError(err.response?.data?.error || 'Login failed. Please verify email and password.');
+        const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Login failed. Please verify email and password.';
+        setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
       }
     } finally {
       setLoading(false);

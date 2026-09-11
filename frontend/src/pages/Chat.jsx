@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { chatService } from '../services/chatService';
 import { documentService } from '../services/documentService';
 import { categoryService } from '../services/categoryService';
+import UserAvatar from '../components/UserAvatar';
 import { 
   MessageSquare, 
   Plus, 
@@ -38,7 +40,89 @@ const LANGUAGES = [
 // In-memory cache for loaded sessions across component remounts and tab switching
 const sessionMessagesCache = new Map();
 
-const Message = memo(function Message({ msg }) {
+function AiRetrievalLoadingCard() {
+  const [stage, setStage] = useState(0);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setStage(1), 1200);
+    const t2 = setTimeout(() => setStage(2), 2600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
+  const steps = [
+    { label: 'Querying Vector Knowledge Base...', detail: 'Scanning similarity embeddings in knowledge base' },
+    { label: 'Analyzing & Reranking Document Chunks...', detail: 'Extracting verified contextual evidence' },
+    { label: 'Synthesizing Response with SmartDoc AI...', detail: 'Formulating structured grounded answer' }
+  ];
+
+  return (
+    <div className="message-row ai-row animate-fade-in">
+      <div className="message-avatar ai-avatar ai-avatar-generating">
+        <img src="/logo-transparent.png" alt="SmartDoc AI" className="generating-logo-icon" />
+        <div className="generating-halo-ring" />
+      </div>
+      <div className="message-wrapper">
+        <div className="message-header">
+          <span className="sender-name">SmartDoc RAG AI</span>
+          <span className="ai-status-pill">
+            <Sparkles size={11} className="ai-spin-icon" />
+            <span>RAG Active</span>
+          </span>
+        </div>
+        <div className="message-bubble ai-generating-card glass-card">
+          {/* Step Progress Tracker */}
+          <div className="rag-pipeline-tracker">
+            <div className={`pipeline-step ${stage >= 0 ? 'active' : ''} ${stage > 0 ? 'completed' : ''}`}>
+              <span className="step-dot" />
+              <span className="step-label">Vector Search</span>
+            </div>
+            <div className={`pipeline-line ${stage >= 1 ? 'active' : ''}`} />
+            <div className={`pipeline-step ${stage >= 1 ? 'active' : ''} ${stage > 1 ? 'completed' : ''}`}>
+              <span className="step-dot" />
+              <span className="step-label">Context Chunks</span>
+            </div>
+            <div className={`pipeline-line ${stage >= 2 ? 'active' : ''}`} />
+            <div className={`pipeline-step ${stage >= 2 ? 'active' : ''}`}>
+              <span className="step-dot" />
+              <span className="step-label">AI Reasoning</span>
+            </div>
+          </div>
+
+          <div className="generating-card-top">
+            <div className="neural-equalizer">
+              <span className="neural-bar bar-1" />
+              <span className="neural-bar bar-2" />
+              <span className="neural-bar bar-3" />
+              <span className="neural-bar bar-4" />
+              <span className="neural-bar bar-5" />
+              <span className="neural-bar bar-6" />
+              <span className="neural-bar bar-7" />
+            </div>
+            <div className="generating-text-group">
+              <span className="generating-prompt-text">
+                {steps[stage].label}
+              </span>
+              <span className="generating-sub-detail">
+                {steps[stage].detail}
+              </span>
+            </div>
+          </div>
+          
+          <div className="generating-shimmer-track">
+            <div className="shimmer-bar bar-full" />
+            <div className="shimmer-bar bar-three-quarters" />
+            <div className="shimmer-bar bar-half" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const Message = memo(function Message({ msg, user }) {
   const isUser = msg.role === 'user';
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -70,57 +154,34 @@ const Message = memo(function Message({ msg }) {
 
   // If this is an assistant placeholder waiting for the first streaming chunk
   if (!isUser && msg.streaming && !msg.message) {
-    return (
-      <div className="message-row ai-row animate-fade-in">
-        <div className="message-avatar ai-avatar ai-avatar-generating">
-          <Bot size={18} className="generating-bot-icon" />
-          <div className="generating-halo-ring" />
-        </div>
-        <div className="message-wrapper">
-          <div className="message-header">
-            <span className="sender-name">SmartDoc RAG AI</span>
-            <span className="ai-status-pill">
-              <Sparkles size={11} className="ai-spin-icon" />
-              <span>Synthesizing Answer</span>
-            </span>
-          </div>
-          <div className="message-bubble ai-generating-card glass-card">
-            <div className="generating-card-top">
-              <div className="neural-equalizer">
-                <span className="neural-bar bar-1" />
-                <span className="neural-bar bar-2" />
-                <span className="neural-bar bar-3" />
-                <span className="neural-bar bar-4" />
-                <span className="neural-bar bar-5" />
-                <span className="neural-bar bar-6" />
-                <span className="neural-bar bar-7" />
-              </div>
-              <span className="generating-prompt-text">
-                Searching documents & reasoning...
-              </span>
-            </div>
-            
-            <div className="generating-shimmer-track">
-              <div className="shimmer-bar bar-full" />
-              <div className="shimmer-bar bar-three-quarters" />
-              <div className="shimmer-bar bar-half" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <AiRetrievalLoadingCard />;
   }
 
   return (
-    <div className={`message-row ${isUser ? 'user-row' : 'ai-row'}`}>
-      <div className={`message-avatar ${isUser ? 'user-avatar' : 'ai-avatar'}`}>
-        {isUser ? <User size={16} /> : <Bot size={18} />}
+    <div className={`message-row ${isUser ? 'user-row' : 'ai-row'} message-appear`}>
+      <div className={`message-avatar ${isUser ? 'user-avatar' : 'ai-avatar'}`} title={isUser ? (user?.name || 'You') : 'SmartDoc RAG AI'}>
+        {isUser ? (
+          <UserAvatar 
+            user={user} 
+            size={34} 
+            border="1.5px solid var(--border-active)"
+            boxShadow="0 2px 10px var(--primary-glow)"
+          />
+        ) : (
+          <img src="/logo-transparent.png" alt="SmartDoc AI" className="ai-avatar-logo" />
+        )}
       </div>
 
       <div className="message-wrapper">
         <div className="message-header">
           <span className="sender-name">{isUser ? 'You' : 'SmartDoc RAG AI'}</span>
-          {!isUser && (
+          {!isUser && msg.streaming && (
+            <span className="ai-streaming-pill">
+              <span className="streaming-pulse-dot" />
+              <span>Streaming answer...</span>
+            </span>
+          )}
+          {!isUser && !msg.streaming && (
             <div style={{ display: 'flex', gap: 6 }}>
               <button className="copy-btn" onClick={handleSpeak} title="Read aloud">
                 <Volume2 size={14} className={speaking ? 'text-primary spin' : ''} />
@@ -133,7 +194,10 @@ const Message = memo(function Message({ msg }) {
         </div>
 
         <div className="message-bubble glass-card">
-          <p className="message-text" style={{ whiteSpace: 'pre-wrap' }}>{cleanMessage}</p>
+          <p className="message-text" style={{ whiteSpace: 'pre-wrap' }}>
+            {cleanMessage}
+            {!isUser && msg.streaming && <span className="streaming-cursor" />}
+          </p>
         </div>
       </div>
     </div>
@@ -141,6 +205,7 @@ const Message = memo(function Message({ msg }) {
 });
 
 export default function Chat() {
+  const { user } = useAuth();
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
@@ -738,55 +803,73 @@ export default function Chat() {
     loadingRef.current = true;
     requestAnimationFrame(() => scrollToBottom());
 
-    await chatService.askStream(
-      {
-        session_id: currentSession.id,
-        question: query,
-        document_id: filterDocId ? parseInt(filterDocId) : null,
-        category_id: filterCatId ? parseInt(filterCatId) : null,
-        explanation_mode: explanationMode,
-        language: language,
-      },
-      {
-        onChunk: (text) => {
-          // Append each token to the streaming placeholder
-          setMessages(prev => prev.map(m =>
-            m.id === aiPlaceholderId
-              ? { ...m, message: m.message + text }
-              : m
-          ));
-          requestAnimationFrame(() => scrollToBottom());
+    try {
+      await chatService.askStream(
+        {
+          session_id: currentSession?.id || activeSession?.id || parseInt(sessionId),
+          question: query,
+          document_id: filterDocId ? parseInt(filterDocId) : null,
+          category_id: filterCatId ? parseInt(filterCatId) : null,
+          explanation_mode: explanationMode,
+          language: language,
         },
-        onDone: ({ sources, message_id, session_id }) => {
-          // Finalise: remove streaming flag, attach sources
-          setMessages(prev => {
-            const updated = prev.map(m =>
+        {
+          onChunk: (text) => {
+            // Append each token to the streaming placeholder
+            setMessages(prev => prev.map(m =>
               m.id === aiPlaceholderId
-                ? { ...m, sources: sources || [], streaming: false }
+                ? { ...m, message: m.message + text }
                 : m
-            );
-            sessionMessagesCache.set(currentSession.id, { session: currentSession, messages: updated });
-            return updated;
-          });
-          if (currentSession.title === 'New Conversation' || currentSession.title === 'New Chat') {
-            setSessions(prev => prev.map(s =>
-              s.id === currentSession.id ? { ...s, title: query.slice(0, 50) } : s
             ));
-          }
-          setLoading(false);
-          loadingRef.current = false;
-          requestAnimationFrame(() => scrollToBottom());
-        },
-        onError: (msg) => {
-          setError(msg || 'Failed to generate answer. Please try again.');
-          // Remove the empty placeholder on error
-          setMessages(prev => prev.filter(m => m.id !== aiPlaceholderId));
-          setLoading(false);
-          loadingRef.current = false;
-        },
-      }
-    );
-  }, [activeSession, question, loading, filterDocId, filterCatId, explanationMode, language, scrollToBottom]);
+            requestAnimationFrame(() => scrollToBottom());
+          },
+          onDone: ({ sources, message_id, session_id } = {}) => {
+            // Finalise: remove streaming flag, attach sources
+            try {
+              setMessages(prev => {
+                const updated = prev.map(m =>
+                  m.id === aiPlaceholderId
+                    ? { ...m, sources: sources || [], streaming: false }
+                    : m
+                );
+                const targetId = currentSession?.id || activeSession?.id || parseInt(sessionId);
+                if (targetId) {
+                  sessionMessagesCache.set(targetId, { session: currentSession || activeSession, messages: updated });
+                }
+                return updated;
+              });
+              if (currentSession?.title === 'New Conversation' || currentSession?.title === 'New Chat') {
+                setSessions(prev => prev.map(s =>
+                  s.id === currentSession.id ? { ...s, title: query.slice(0, 50) } : s
+                ));
+              }
+            } finally {
+              setLoading(false);
+              loadingRef.current = false;
+              requestAnimationFrame(() => scrollToBottom());
+            }
+          },
+          onError: (msg) => {
+            setError(msg || 'Failed to generate answer. Please try again.');
+            // Remove the empty placeholder on error
+            setMessages(prev => prev.filter(m => m.id !== aiPlaceholderId));
+            setLoading(false);
+            loadingRef.current = false;
+          },
+        }
+      );
+    } catch (err) {
+      console.warn('askStream execution error:', err);
+    } finally {
+      // Guarantee UI state unfreezes in all circumstances
+      setLoading(false);
+      loadingRef.current = false;
+      setMessages(prev => prev.map(m =>
+        m.id === aiPlaceholderId ? { ...m, streaming: false } : m
+      ));
+      requestAnimationFrame(() => scrollToBottom());
+    }
+  }, [activeSession, question, loading, filterDocId, filterCatId, explanationMode, language, scrollToBottom, sessionId]);
 
 
   return (
@@ -801,7 +884,7 @@ export default function Chat() {
             <div className="chat-pane-header">
               <div className="pane-title">
                 <MessageSquare size={18} className="text-primary" />
-                <span>Chat Sessions ({sessions.length})</span>
+                <span>Chat Sessions</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button 
@@ -876,7 +959,6 @@ export default function Chat() {
               >
                 <MessageSquare size={16} className="text-primary" />
                 <span>Chat Sessions</span>
-                {sessions.length > 0 && <span className="chat-sessions-badge">{sessions.length}</span>}
               </button>
 
               <button 
@@ -969,8 +1051,11 @@ export default function Chat() {
 
           {!activeSession && messages.length === 0 && (
             <div className="chat-welcome-hero">
-              <div className="welcome-avatar">
-                <Sparkles size={36} />
+              <div className="welcome-avatar-container">
+                <div className="welcome-avatar-glow-ring" />
+                <div className="welcome-avatar">
+                  <img src="/logo-transparent.png" alt="SmartDoc AI" className="welcome-project-logo" />
+                </div>
               </div>
               <h2>Ask Anything About Your Documents</h2>
               <p>SmartDoc AI uses RAG vector search to find exact quotes, page references, and structured insights from your knowledge base.</p>
@@ -1018,7 +1103,7 @@ export default function Chat() {
           )}
           
           {messages.map((msg, i) => (
-            <Message key={msg.id || i} msg={msg} />
+            <Message key={msg.id || i} msg={msg} user={user} />
           ))}
 
 
