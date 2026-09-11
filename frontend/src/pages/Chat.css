@@ -3,15 +3,107 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Layout Shell ─────────────────────────────────────────────── */
+/* ─── Layout Shell — Full Width Streamlined Chat ───────────────── */
 .chat-container {
-  display: grid;
-  grid-template-columns: 272px 1fr;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
   height: calc(100vh - var(--navbar-height) - 56px);
   min-height: 560px;
+  position: relative;
+  width: 100%;
 }
 
-/* ─── Sessions History Pane ─────────────────────────────────────── */
+/* ─── Slide-out Drawer Backdrop & Pane ─────────────────────────── */
+.chat-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(4, 6, 12, 0.68);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 99999;
+  display: flex;
+}
+
+.chat-history-drawer {
+  width: min(340px, 86vw);
+  height: 100%;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-active);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 14px 0 45px rgba(0, 0, 0, 0.6);
+  animation: drawerSlideRight 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes drawerSlideRight {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.chat-sessions-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #000;
+  font-weight: 800;
+  font-size: 0.72rem;
+  border-radius: 999px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 6px;
+}
+
+.chat-top-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chat-session-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chat-sessions-trigger-btn {
+  gap: 8px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+}
+
+.chat-sessions-trigger-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+  color: var(--primary);
+}
+
+.chat-new-btn-quick {
+  gap: 6px;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  padding: 7px 14px;
+}
+
+.chat-lang-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Sessions History Pane (Legacy fallback) ───────────────────── */
 .chat-history-pane {
   background: var(--bg-surface);
   backdrop-filter: var(--glass-backdrop);
@@ -217,7 +309,7 @@
   color: var(--primary, #F95700) !important;
 }
 
-/* ─── Messages Thread — GPU-accelerated scroll ──────────────────── */
+/* ─── Messages Thread — GPU-accelerated scroll with Central Watermark ── */
 .messages-thread {
   flex: 1;
   overflow-y: auto;
@@ -225,13 +317,67 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
-
-  contain: strict;
+  position: relative;
   will-change: scroll-position;
   transform: translateZ(0);
 
   scrollbar-width: thin;
   scrollbar-color: rgba(249, 87, 0, 0.20) transparent;
+}
+
+.messages-thread > *:not(.chat-center-watermark) {
+  position: relative;
+  z-index: 2;
+}
+
+/* ─── SmartDoc AI Central Background Watermark ──────────────────── */
+.chat-center-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  opacity: 0.08;
+  transition: opacity 0.3s ease;
+}
+
+.chat-center-watermark-logo {
+  width: clamp(140px, 20vw, 240px);
+  height: auto;
+  filter: drop-shadow(0 0 50px var(--primary));
+  animation: watermarkBreath 7s ease-in-out infinite alternate;
+}
+
+.chat-center-watermark-brand {
+  font-family: var(--font-heading);
+  font-size: clamp(1.6rem, 3.2vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-center-watermark-sub {
+  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+@keyframes watermarkBreath {
+  0% { transform: scale(0.97); opacity: 0.65; }
+  100% { transform: scale(1.03); opacity: 1; }
 }
 
 .messages-thread::-webkit-scrollbar { width: 4px; }
@@ -491,6 +637,160 @@
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ─── Dynamic AI Generating Animations ──────────────────────────── */
+.ai-avatar-generating {
+  position: relative;
+  background: linear-gradient(135deg, var(--primary) 0%, #ff8c42 100%) !important;
+  color: #000 !important;
+  box-shadow: 0 0 20px var(--primary-glow) !important;
+}
+
+.generating-bot-icon {
+  animation: botPulse 2s ease-in-out infinite;
+}
+
+@keyframes botPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.generating-halo-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--primary);
+  border-right-color: #ff8c42;
+  animation: haloSpin 1.4s linear infinite;
+}
+
+@keyframes haloSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ai-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--primary-subtle);
+  color: var(--primary);
+  border: 1px solid var(--border-active);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-left: 8px;
+  letter-spacing: 0.02em;
+}
+
+.ai-spin-icon {
+  animation: spinSlow 3s linear infinite;
+}
+
+@keyframes spinSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ai-generating-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px !important;
+  min-width: min(380px, 85vw);
+  border: 1px solid var(--border-active) !important;
+  background: linear-gradient(135deg, rgba(249, 87, 0, 0.05) 0%, rgba(13, 18, 28, 0.85) 100%) !important;
+  box-shadow: 0 4px 24px rgba(249, 87, 0, 0.15) !important;
+  border-radius: var(--radius-lg) !important;
+}
+
+.generating-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.neural-equalizer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.neural-bar {
+  width: 3.5px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--primary) 0%, #ff8c42 100%);
+  animation: neuralWave 1.2s ease-in-out infinite alternate;
+}
+
+.neural-bar.bar-1 { height: 7px; animation-delay: 0.05s; }
+.neural-bar.bar-2 { height: 16px; animation-delay: 0.2s; }
+.neural-bar.bar-3 { height: 11px; animation-delay: 0.35s; }
+.neural-bar.bar-4 { height: 19px; animation-delay: 0.1s; }
+.neural-bar.bar-5 { height: 14px; animation-delay: 0.4s; }
+.neural-bar.bar-6 { height: 17px; animation-delay: 0.25s; }
+.neural-bar.bar-7 { height: 9px; animation-delay: 0.15s; }
+
+@keyframes neuralWave {
+  0% { height: 4px; opacity: 0.4; transform: scaleY(0.5); }
+  100% { height: 20px; opacity: 1; transform: scaleY(1.2); }
+}
+
+.generating-prompt-text {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+  background: linear-gradient(90deg, var(--text-main) 0%, var(--primary) 50%, var(--text-main) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShine 3s linear infinite;
+}
+
+@keyframes textShine {
+  to { background-position: 200% center; }
+}
+
+.generating-shimmer-track {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+}
+
+.shimmer-bar {
+  height: 7px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(249, 87, 0, 0.4), transparent);
+  animation: shimmerMove 1.6s infinite;
+}
+
+@keyframes shimmerMove {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.shimmer-bar.bar-full { width: 92%; }
+.shimmer-bar.bar-three-quarters { width: 78%; }
+.shimmer-bar.bar-half { width: 55%; }
 
 /* ─── Source Citations ──────────────────────────────────────────── */
 .sources-container {

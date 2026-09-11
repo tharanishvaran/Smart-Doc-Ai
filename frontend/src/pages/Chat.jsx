@@ -71,19 +71,40 @@ const Message = memo(function Message({ msg }) {
   // If this is an assistant placeholder waiting for the first streaming chunk
   if (!isUser && msg.streaming && !msg.message) {
     return (
-      <div className="message-row ai-row">
-        <div className="message-avatar ai-avatar pulse-glow">
-          <Bot size={18} />
+      <div className="message-row ai-row animate-fade-in">
+        <div className="message-avatar ai-avatar ai-avatar-generating">
+          <Bot size={18} className="generating-bot-icon" />
+          <div className="generating-halo-ring" />
         </div>
         <div className="message-wrapper">
           <div className="message-header">
             <span className="sender-name">SmartDoc RAG AI</span>
+            <span className="ai-status-pill">
+              <Sparkles size={11} className="ai-spin-icon" />
+              <span>Synthesizing Answer</span>
+            </span>
           </div>
-          <div className="message-bubble typing-bubble glass-card">
-            <div className="typing-indicator">
-              <span /><span /><span />
+          <div className="message-bubble ai-generating-card glass-card">
+            <div className="generating-card-top">
+              <div className="neural-equalizer">
+                <span className="neural-bar bar-1" />
+                <span className="neural-bar bar-2" />
+                <span className="neural-bar bar-3" />
+                <span className="neural-bar bar-4" />
+                <span className="neural-bar bar-5" />
+                <span className="neural-bar bar-6" />
+                <span className="neural-bar bar-7" />
+              </div>
+              <span className="generating-prompt-text">
+                Searching documents & reasoning...
+              </span>
             </div>
-            <span className="typing-text">Thinking...</span>
+            
+            <div className="generating-shimmer-track">
+              <div className="shimmer-bar bar-full" />
+              <div className="shimmer-bar bar-three-quarters" />
+              <div className="shimmer-bar bar-half" />
+            </div>
           </div>
         </div>
       </div>
@@ -134,6 +155,7 @@ export default function Chat() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [loading, setLoading] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(false);
+  const [showSessionsDrawer, setShowSessionsDrawer] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filterDocId, setFilterDocId] = useState('');
@@ -769,50 +791,106 @@ export default function Chat() {
 
   return (
     <div className="chat-container animate-fade-in">
-      {/* Chat History Sidebar */}
-      <aside className="chat-history-pane glass-card">
-        <div className="chat-pane-header">
-          <div className="pane-title">
-            <MessageSquare size={18} className="text-primary" />
-            <span>Chat Sessions</span>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={newChat}>
-            <Plus size={16} />
-            <span>New Chat</span>
-          </button>
-        </div>
-
-        <div className="session-scroll-list">
-          {sessions.length === 0 && (
-            <div className="empty-sessions">
-              <p>No previous conversations.</p>
+      {/* Slide-out Sessions Drawer */}
+      {showSessionsDrawer && (
+        <div className="chat-drawer-backdrop animate-fade-in" onClick={() => setShowSessionsDrawer(false)}>
+          <aside 
+            className="chat-history-drawer glass-card animate-slide-right"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="chat-pane-header">
+              <div className="pane-title">
+                <MessageSquare size={18} className="text-primary" />
+                <span>Chat Sessions ({sessions.length})</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button 
+                  type="button" 
+                  className="btn btn-primary btn-xs" 
+                  onClick={() => { newChat(); setShowSessionsDrawer(false); }}
+                  title="New conversation"
+                >
+                  <Plus size={14} />
+                  <span>New</span>
+                </button>
+                <button 
+                  type="button" 
+                  className="btn-icon btn-ghost btn-sm" 
+                  onClick={() => setShowSessionsDrawer(false)}
+                  title="Close sessions panel"
+                >
+                  <X size={16} />
+                </button>
+              </div>
             </div>
-          )}
-          {sessions.map(s => (
-            <div 
-              key={s.id} 
-              className={`session-item ${activeSession?.id === s.id ? 'active' : ''}`}
-              onClick={() => { setActiveSession(s); loadSession(s.id); navigate(`/chat/${s.id}`); }}
-            >
-              <MessageSquare size={16} className="session-icon" />
-              <span className="session-title-text">{s.title}</span>
-              <button 
-                className="session-delete-btn" 
-                onClick={(e) => deleteSession(s.id, e)}
-                title="Delete session"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </aside>
 
-      {/* Main Chat Interface */}
+            <div className="session-scroll-list">
+              {sessions.length === 0 ? (
+                <div className="empty-sessions">
+                  <p>No previous conversations.</p>
+                </div>
+              ) : (
+                sessions.map(s => (
+                  <div 
+                    key={s.id} 
+                    className={`session-item ${activeSession?.id === s.id ? 'active' : ''}`}
+                    onClick={() => { 
+                      setActiveSession(s); 
+                      loadSession(s.id); 
+                      navigate(`/chat/${s.id}`);
+                      setShowSessionsDrawer(false);
+                    }}
+                  >
+                    <MessageSquare size={16} className="session-icon" />
+                    <span className="session-title-text">{s.title}</span>
+                    <button 
+                      className="session-delete-btn" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteSession(s.id, e);
+                      }}
+                      title="Delete session"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Full-Width Chat Interface */}
       <main className="chat-main-pane glass-card">
         {/* Top Control Bar */}
-        <div className="chat-filter-bar" style={{ flexWrap: 'wrap', gap: 12 }}>
-          <div className="filter-inputs" style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <div className="chat-filter-bar">
+          <div className="chat-top-nav-row">
+            {/* Clickable Button to Open Chat Sessions */}
+            <div className="chat-session-btn-group">
+              <button 
+                type="button"
+                className={`btn btn-secondary btn-sm chat-sessions-trigger-btn ${showSessionsDrawer ? 'active' : ''}`}
+                onClick={() => setShowSessionsDrawer(true)}
+                title="View previous chat sessions"
+              >
+                <MessageSquare size={16} className="text-primary" />
+                <span>Chat Sessions</span>
+                {sessions.length > 0 && <span className="chat-sessions-badge">{sessions.length}</span>}
+              </button>
+
+              <button 
+                type="button" 
+                className="btn btn-primary btn-sm chat-new-btn-quick"
+                onClick={newChat}
+                title="Start a new chat conversation"
+              >
+                <Plus size={15} />
+                <span>New Chat</span>
+              </button>
+            </div>
+
+            {/* Explanation Mode Pills */}
             <div className="mode-selector">
               <button 
                 className={`mode-pill ${explanationMode === 'normal' ? 'active' : ''}`}
@@ -840,7 +918,8 @@ export default function Chat() {
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {/* Language Selector */}
+            <div className="chat-lang-group">
               <Globe size={15} className="text-primary" />
               <select 
                 className="input select-sm" 
@@ -853,19 +932,23 @@ export default function Chat() {
             </div>
           </div>
 
-          <div className="filter-inputs" style={{ marginTop: 6, width: '100%' }}>
+          {/* Document & Category Filters */}
+          <div className="filter-inputs" style={{ marginTop: 8, width: '100%', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <select 
               className="input select-sm" 
               value={filterDocId} 
               onChange={e => { setFilterDocId(e.target.value); setFilterCatId(''); }}
+              style={{ flex: 1, minWidth: 160 }}
             >
               <option value="">All Uploaded Documents</option>
               {documents.map(d => <option key={d.id} value={d.id}>{d.original_filename}</option>)}
             </select>
+
             <select 
               className="input select-sm" 
               value={filterCatId} 
               onChange={e => { setFilterCatId(e.target.value); setFilterDocId(''); }}
+              style={{ flex: 1, minWidth: 160 }}
             >
               <option value="">All Categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -875,6 +958,15 @@ export default function Chat() {
 
         {/* Message Thread */}
         <div className="messages-thread" ref={messagesThreadRef}>
+          {/* SmartDoc AI Central Background Watermark */}
+          <div className="chat-center-watermark" aria-hidden="true">
+            <img src="/logo-transparent.png" alt="" className="chat-center-watermark-logo" />
+            <div className="chat-center-watermark-brand">
+              SmartDoc <span className="logo-badge">AI</span>
+            </div>
+            <div className="chat-center-watermark-sub">Document Intelligence</div>
+          </div>
+
           {!activeSession && messages.length === 0 && (
             <div className="chat-welcome-hero">
               <div className="welcome-avatar">
