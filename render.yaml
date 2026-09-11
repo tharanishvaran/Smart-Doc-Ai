@@ -1,7 +1,7 @@
 services:
   # Unified Full-Stack Web Service (Frontend + Backend in ONE Single Service)
   - type: web
-    name: Rag-Project-2.0
+    name: Smart-Doc-Ai
     env: python
     plan: free
     buildCommand: npm --prefix frontend install && npm --prefix frontend run build && pip install -r backend/requirements.txt
