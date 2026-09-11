@@ -212,7 +212,7 @@ export default function Profile() {
           </div>
 
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-            High-contrast tech theme inspired by PondyTechFix with electric flame accents and deep obsidian glassmorphism.
+            High-contrast modern tech theme with electric flame accents and deep obsidian glassmorphism.
           </p>
 
           <div 
