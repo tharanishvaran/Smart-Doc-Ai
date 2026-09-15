@@ -81,12 +81,11 @@ def analyze_question_papers():
     # Fetch documents — ensure they belong to this user
     documents = Document.query.filter(
         Document.id.in_(document_ids),
-        Document.user_id == user_id,
-        Document.upload_status.in_(['INDEXED', 'completed', 'indexed', 'COMPLETED'])
+        Document.user_id == user_id
     ).all()
 
     if not documents:
-        return error_response('No valid completed documents found.', 404)
+        return error_response('No valid documents found for analysis.', 404)
 
     try:
         result = analysis_service.analyze_question_papers(documents)

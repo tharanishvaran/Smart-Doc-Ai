@@ -63,13 +63,13 @@ export default function Register() {
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <User size={14} className="text-primary" /> Full Name
             </label>
-            <input 
-              className="input" 
-              type="text" 
-              placeholder="Alex Smith" 
+            <input
+              className="input"
+              type="text"
+              placeholder="Alex Smith"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })} 
-              required 
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              required
             />
           </div>
 
@@ -77,13 +77,13 @@ export default function Register() {
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Mail size={14} className="text-primary" /> Email address
             </label>
-            <input 
-              className="input" 
-              type="email" 
-              placeholder="alex@university.edu" 
+            <input
+              className="input"
+              type="email"
+              placeholder="alex@university.edu"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })} 
-              required 
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
             />
           </div>
 
@@ -91,13 +91,13 @@ export default function Register() {
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Lock size={14} className="text-primary" /> Password
             </label>
-            <input 
-              className="input" 
-              type="password" 
-              placeholder="Min 8 chars, 1 uppercase, 1 digit" 
+            <input
+              className="input"
+              type="password"
+              placeholder="Min 8 chars, 1 uppercase, 1 digit"
               value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })} 
-              required 
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
             />
           </div>
 
@@ -105,20 +105,20 @@ export default function Register() {
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Lock size={14} className="text-primary" /> Confirm Password
             </label>
-            <input 
-              className="input" 
-              type="password" 
-              placeholder="Repeat your password" 
+            <input
+              className="input"
+              type="password"
+              placeholder="Repeat your password"
               value={form.confirm}
-              onChange={(e) => setForm({ ...form, confirm: e.target.value })} 
-              required 
+              onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+              required
             />
           </div>
 
-          <button 
-            className="btn btn-primary btn-lg" 
-            type="submit" 
-            disabled={loading} 
+          <button
+            className="btn btn-primary btn-lg"
+            type="submit"
+            disabled={loading}
             style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}
           >
             {loading ? (

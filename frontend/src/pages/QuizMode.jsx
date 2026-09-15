@@ -49,6 +49,7 @@ export default function QuizMode() {
   const [timerActive, setTimerActive] = useState(savedState?.timerActive ?? false);
 
   const [quizSession, setQuizSession] = useState(savedState?.quizSession || null);
+  const [quizCompleted, setQuizCompleted] = useState(savedState?.quizCompleted || false);
   const [currentIdx, setCurrentIdx] = useState(savedState?.currentIdx ?? 0);
   const [userAnswerText, setUserAnswerText] = useState(savedState?.userAnswerText || '');
   const [selectedOption, setSelectedOption] = useState(savedState?.selectedOption ?? null);
@@ -75,6 +76,7 @@ export default function QuizMode() {
         timeLeft,
         timerActive,
         quizSession,
+        quizCompleted,
         currentIdx,
         userAnswerText,
         selectedOption,
@@ -96,6 +98,7 @@ export default function QuizMode() {
     timeLeft,
     timerActive,
     quizSession,
+    quizCompleted,
     currentIdx,
     userAnswerText,
     selectedOption,
@@ -130,9 +133,10 @@ export default function QuizMode() {
   const handleGenerateQuestions = async () => {
     if (!topic.trim()) { setError('Please enter a topic or subject.'); return; }
     setError(''); setLoading(true);
+    const countToSend = Math.max(1, Math.min(25, parseInt(count, 10) || 5));
     try {
       const res = await quizService.generateQuestions({
-        topic, question_type: questionType, mark_type: markType, count
+        topic, question_type: questionType, mark_type: markType, count: countToSend
       });
       setGeneratedText(res.data.data.questions_text);
     } catch (err) {
@@ -144,14 +148,15 @@ export default function QuizMode() {
     if (!subject.trim() || !quizTopic.trim()) {
       setError('Please enter both subject and topic.'); return;
     }
-    setError(''); setLoading(true); setQuizSession(null); setEvalResult(null);
+    setError(''); setLoading(true); setQuizSession(null); setQuizCompleted(false); setEvalResult(null);
     setCurrentIdx(0); setScoreBoard({ total: 0, correct: 0 });
+    const countToSend = Math.max(1, Math.min(30, parseInt(questionCount, 10) || 5));
     try {
       const res = await quizService.startQuiz({
-        subject, topic: quizTopic, count: questionCount
+        subject, topic: quizTopic, count: countToSend
       });
       setQuizSession(res.data.data);
-      setTimeLeft(60); setTimerActive(true);
+      setTimeLeft(60); setTimerActive(timerEnabled);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to start quiz session.');
     } finally { setLoading(false); }
@@ -162,7 +167,7 @@ export default function QuizMode() {
     const qObj = quizSession.questions[currentIdx];
     const finalAns = overrideAns || (selectedOption !== null ? qObj.options[selectedOption] : userAnswerText);
 
-    if (!finalAns.trim()) { setError('Please select or type an answer.'); return; }
+    if (!finalAns || !String(finalAns).trim()) { setError('Please select or type an answer.'); return; }
     setError(''); setEvaluating(true); setTimerActive(false);
 
     try {
@@ -171,6 +176,7 @@ export default function QuizMode() {
         question: qObj.question,
         user_answer: finalAns,
         expected_answer: qObj.correct_answer || "",
+        explanation: qObj.explanation || "",
         topic_tag: qObj.topic_tag || quizTopic
       });
 
@@ -192,8 +198,33 @@ export default function QuizMode() {
       setSelectedOption(null);
       setUserAnswerText('');
       setTimeLeft(60);
-      setTimerActive(true);
+      setTimerActive(timerEnabled);
     }
+  };
+
+  const handleRestartQuiz = () => {
+    setCurrentIdx(0);
+    setScoreBoard({ total: 0, correct: 0 });
+    setEvalResult(null);
+    setSelectedOption(null);
+    setUserAnswerText('');
+    setTimeLeft(60);
+    setTimerActive(timerEnabled);
+    setQuizCompleted(false);
+  };
+
+  const handleFinishQuiz = () => {
+    setTimerActive(false);
+    setQuizCompleted(true);
+  };
+
+  const handleExitQuiz = () => {
+    setQuizSession(null);
+    setQuizCompleted(false);
+    setEvalResult(null);
+    setSelectedOption(null);
+    setUserAnswerText('');
+    setTimerActive(false);
   };
 
   return (
@@ -259,9 +290,23 @@ export default function QuizMode() {
                     type="number" 
                     className="input" 
                     min="1" 
-                    max="20"
+                    max="30"
+                    placeholder="e.g. 5"
                     value={questionCount}
-                    onChange={e => setQuestionCount(parseInt(e.target.value) || 5)}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setQuestionCount('');
+                      } else {
+                        const num = parseInt(val, 10);
+                        setQuestionCount(isNaN(num) ? '' : num);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (questionCount === '' || Number(questionCount) < 1) {
+                        setQuestionCount(5);
+                      }
+                    }}
                   />
                 </div>
 
@@ -283,18 +328,59 @@ export default function QuizMode() {
                 <span>Start AI Quiz Now</span>
               </button>
             </div>
+          ) : quizCompleted ? (
+            /* Quiz Completed Summary View */
+            <div className="glass-card animate-fade-in" style={{ padding: 32, maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', padding: 16, borderRadius: '50%', background: 'var(--primary-subtle)', marginBottom: 16 }}>
+                <Award size={48} className="text-primary" />
+              </div>
+              <h2 style={{ marginBottom: 8 }}>Quiz Finished!</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: '0.95rem' }}>
+                Subject: <strong style={{ color: 'var(--text-main)' }}>{quizSession.subject}</strong> &bull; Topic: <strong style={{ color: 'var(--text-main)' }}>{quizTopic}</strong>
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16, marginBottom: 28 }}>
+                <div className="glass-card" style={{ padding: '16px 20px', background: 'var(--bg-surface-elevated)' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Questions</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {quizSession.questions.length}
+                  </div>
+                </div>
+                <div className="glass-card" style={{ padding: '16px 20px', background: 'var(--bg-surface-elevated)' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Final Score</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    {scoreBoard.correct} / {scoreBoard.total}
+                  </div>
+                </div>
+                <div className="glass-card" style={{ padding: '16px 20px', background: 'var(--bg-surface-elevated)' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Accuracy</div>
+                  <div style={{ fontSize: '1.8rem', fontWeight: 700, color: scoreBoard.total > 0 && (scoreBoard.correct / scoreBoard.total) >= 0.7 ? '#10b981' : '#f59e0b' }}>
+                    {scoreBoard.total > 0 ? Math.round((scoreBoard.correct / scoreBoard.total) * 100) : 0}%
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button className="btn btn-secondary" onClick={handleRestartQuiz} style={{ minWidth: 160, justifyContent: 'center' }}>
+                  <RefreshCw size={16} /> <span>Restart Quiz</span>
+                </button>
+                <button className="btn btn-primary" onClick={handleExitQuiz} style={{ minWidth: 160, justifyContent: 'center' }}>
+                  <Play size={16} /> <span>Finish & New Quiz</span>
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="glass-card animate-fade-in" style={{ padding: 20 }}>
               {/* Header Stats & Timer */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                   <span className="badge badge-primary">
                     Question {currentIdx + 1} of {quizSession.questions.length}
                   </span>
                   <span className="badge badge-secondary">Subject: {quizSession.subject}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {timerEnabled && (
                     <div className={`quiz-timer ${timeLeft <= 10 ? 'alert-error' : ''}`}>
                       <Clock size={16} /> 00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
@@ -303,6 +389,14 @@ export default function QuizMode() {
                   <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>
                     Score: <span className="text-primary">{scoreBoard.correct}</span> / {scoreBoard.total}
                   </div>
+                  <button 
+                    className="btn btn-secondary btn-sm" 
+                    onClick={handleFinishQuiz} 
+                    title="Finish current quiz and view results"
+                    style={{ fontSize: '0.8rem', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 5 }}
+                  >
+                    <Award size={14} /> <span>Finish</span>
+                  </button>
                 </div>
               </div>
 
@@ -314,34 +408,64 @@ export default function QuizMode() {
               {/* Options if MCQ */}
               {quizSession.questions[currentIdx]?.options && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                  {quizSession.questions[currentIdx].options.map((opt, i) => (
-                    <button
-                      key={i}
-                      className={`glass-card ${selectedOption === i ? 'active-option' : ''}`}
-                      onClick={() => !evalResult && setSelectedOption(i)}
-                      style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        cursor: evalResult ? 'default' : 'pointer',
-                        border: selectedOption === i ? '2px solid var(--primary)' : '1px solid var(--border)',
-                        background: selectedOption === i ? 'var(--primary-subtle)' : 'var(--bg-surface-elevated)',
-                        color: 'var(--text-main)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        width: '100%',
-                        fontSize: '0.92rem',
-                        overflowWrap: 'break-word',
-                        wordBreak: 'normal',
-                        whiteSpace: 'normal'
-                      }}
-                    >
-                      <strong style={{ minWidth: 22, color: selectedOption === i ? 'var(--primary)' : 'var(--text-main)', fontWeight: 700, flexShrink: 0 }}>
-                        {String.fromCharCode(65 + i)}.
-                      </strong> 
-                      <span style={{ color: 'var(--text-main)', fontWeight: 500, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>{opt}</span>
-                    </button>
-                  ))}
+                  {quizSession.questions[currentIdx].options.map((opt, i) => {
+                    const isSelected = selectedOption === i;
+                    const isCorrectOption = evalResult && (
+                      opt.trim().toLowerCase() === (evalResult.correct_answer || '').trim().toLowerCase() ||
+                      i === quizSession.questions[currentIdx].correct_option_index
+                    );
+                    const isWrongSelection = evalResult && isSelected && !isCorrectOption;
+
+                    let borderStyle = '1px solid var(--border)';
+                    let bgStyle = 'var(--bg-surface-elevated)';
+                    let badgeIcon = null;
+
+                    if (evalResult) {
+                      if (isCorrectOption) {
+                        borderStyle = '2px solid #10b981';
+                        bgStyle = 'rgba(16, 185, 129, 0.12)';
+                        badgeIcon = <CheckCircle2 size={16} style={{ color: '#10b981', marginLeft: 'auto', flexShrink: 0 }} />;
+                      } else if (isWrongSelection) {
+                        borderStyle = '2px solid #ef4444';
+                        bgStyle = 'rgba(239, 68, 68, 0.12)';
+                        badgeIcon = <XCircle size={16} style={{ color: '#ef4444', marginLeft: 'auto', flexShrink: 0 }} />;
+                      }
+                    } else if (isSelected) {
+                      borderStyle = '2px solid var(--primary)';
+                      bgStyle = 'var(--primary-subtle)';
+                    }
+
+                    return (
+                      <button
+                        key={i}
+                        className="glass-card"
+                        onClick={() => !evalResult && setSelectedOption(i)}
+                        style={{
+                          padding: '12px 16px',
+                          textAlign: 'left',
+                          cursor: evalResult ? 'default' : 'pointer',
+                          border: borderStyle,
+                          background: bgStyle,
+                          color: 'var(--text-main)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          width: '100%',
+                          fontSize: '0.92rem',
+                          overflowWrap: 'break-word',
+                          wordBreak: 'normal',
+                          whiteSpace: 'normal',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <strong style={{ minWidth: 22, color: isCorrectOption ? '#10b981' : isSelected ? 'var(--primary)' : 'var(--text-main)', fontWeight: 700, flexShrink: 0 }}>
+                          {String.fromCharCode(65 + i)}.
+                        </strong> 
+                        <span style={{ color: 'var(--text-main)', fontWeight: isCorrectOption ? 600 : 500, flex: 1, minWidth: 0, overflowWrap: 'break-word' }}>{opt}</span>
+                        {badgeIcon}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
@@ -366,11 +490,9 @@ export default function QuizMode() {
                   <SectionLoadingCard 
                     theme="quiz" 
                     mode="action" 
-                    title="Evaluating Answer with Grounded RAG Sources..." 
+                    title="Evaluating Answer..." 
                     steps={[
-                      { label: 'Comparing Response against Ground Truth...', detail: 'Verifying conceptual accuracy and key terminology' },
-                      { label: 'Assessing Understanding & Depth...', detail: 'Checking for subtle nuances and misconceptions' },
-                      { label: 'Formulating Actionable Weakness Feedback...', detail: 'Compiling textbook citations and explanations' }
+                      { label: 'Checking response against ground truth...', detail: 'Verifying concept accuracy' },
                     ]}
                   />
                 </div>
@@ -405,15 +527,25 @@ export default function QuizMode() {
                     </div>
                   )}
 
-                  <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                  <div style={{ marginTop: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     {currentIdx + 1 < quizSession.questions.length ? (
-                      <button className="btn btn-primary" onClick={handleNextQuestion}>
-                        <span>Next Question</span> <ArrowRight size={16} />
-                      </button>
+                      <>
+                        <button className="btn btn-primary" onClick={handleNextQuestion}>
+                          <span>Next Question</span> <ArrowRight size={16} />
+                        </button>
+                        <button className="btn btn-secondary" onClick={handleFinishQuiz}>
+                          <Award size={16} /> <span>Finish Quiz</span>
+                        </button>
+                      </>
                     ) : (
-                      <button className="btn btn-secondary" onClick={() => setQuizSession(null)}>
-                        <RefreshCw size={16} /> <span>Finish & Restart Quiz</span>
-                      </button>
+                      <>
+                        <button className="btn btn-primary" onClick={handleFinishQuiz}>
+                          <Award size={16} /> <span>Finish Quiz</span>
+                        </button>
+                        <button className="btn btn-secondary" onClick={handleRestartQuiz}>
+                          <RefreshCw size={16} /> <span>Restart Quiz</span>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -473,8 +605,22 @@ export default function QuizMode() {
                 className="input" 
                 min="1" 
                 max="25"
+                placeholder="e.g. 5"
                 value={count}
-                onChange={e => setCount(parseInt(e.target.value) || 5)}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setCount('');
+                  } else {
+                    const num = parseInt(val, 10);
+                    setCount(isNaN(num) ? '' : num);
+                  }
+                }}
+                onBlur={() => {
+                  if (count === '' || Number(count) < 1) {
+                    setCount(5);
+                  }
+                }}
               />
             </div>
           </div>

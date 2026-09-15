@@ -73,9 +73,10 @@ export default function ExamPrep() {
   const handleGenerateStrategy = async () => {
     if (!subject.trim()) { setError('Please enter a subject name.'); return; }
     setError(''); setLoading(true);
+    const days = Math.max(1, parseInt(daysRemaining, 10) || 10);
     try {
       const res = await examPrepService.getStrategy({
-        subject, unit, exam_type: examType, days_remaining: daysRemaining
+        subject, unit, exam_type: examType, days_remaining: days
       });
       setStrategyResult(res.data.data.strategy);
     } catch (err) {
@@ -86,8 +87,9 @@ export default function ExamPrep() {
   const handleGenerateStudyPlan = async () => {
     if (!subject.trim()) { setError('Please enter a subject name.'); return; }
     setError(''); setLoading(true);
+    const days = Math.max(1, parseInt(daysRemaining, 10) || 10);
     try {
-      const res = await examPrepService.getStudyPlan({ subject, days_remaining: daysRemaining });
+      const res = await examPrepService.getStudyPlan({ subject, days_remaining: days });
       setStudyPlanResult(res.data.data);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to generate study plan.');
@@ -210,8 +212,22 @@ export default function ExamPrep() {
               className="input" 
               min="1" 
               max="90"
+              placeholder="e.g. 10"
               value={daysRemaining}
-              onChange={e => setDaysRemaining(parseInt(e.target.value) || 1)}
+              onChange={e => {
+                const val = e.target.value;
+                if (val === '') {
+                  setDaysRemaining('');
+                } else {
+                  const num = parseInt(val, 10);
+                  setDaysRemaining(isNaN(num) ? '' : num);
+                }
+              }}
+              onBlur={() => {
+                if (daysRemaining === '' || Number(daysRemaining) < 1) {
+                  setDaysRemaining(10);
+                }
+              }}
             />
           </div>
         </div>
@@ -263,7 +279,7 @@ export default function ExamPrep() {
             mode="action" 
             title={
               activeTab === 'strategy' ? 'Synthesizing Personalized Exam Preparation Strategy...' :
-              activeTab === 'planner' ? `Formulating ${daysRemaining}-Day Adaptive AI Study Schedule...` :
+              activeTab === 'planner' ? `Formulating ${daysRemaining || 10}-Day Adaptive AI Study Schedule...` :
               activeTab === 'topics' ? 'Mining Priority & High-Yield Exam Topics...' :
               activeTab === 'papers' ? 'Analyzing Historical Question Paper Trends...' :
               'Predicting High-Probability Exam Questions...'

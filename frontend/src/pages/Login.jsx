@@ -112,10 +112,10 @@ export default function Login() {
             />
           </div>
 
-          <button 
-            className="btn btn-primary btn-lg" 
-            type="submit" 
-            disabled={loading} 
+          <button
+            className="btn btn-primary btn-lg"
+            type="submit"
+            disabled={loading}
             style={{ width: '100%', marginTop: 8, justifyContent: 'center' }}
           >
             {loading ? (

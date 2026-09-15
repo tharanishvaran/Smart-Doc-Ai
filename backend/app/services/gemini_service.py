@@ -59,6 +59,28 @@ RESPONSE GUIDELINES:
 4. Do NOT use markdown bold formatting or asterisks (**). Output clean plain text without **."""
 
 
+def _get_language_instruction(language: str) -> str:
+    if not language or language.strip().lower() == 'english':
+        return ""
+
+    lang_clean = language.strip().lower()
+
+    if 'tanglish' in lang_clean or ('tamil' in lang_clean and 'english' in lang_clean):
+        return """CRITICAL LANGUAGE MANDATE - TANGLISH (TAMIL IN ENGLISH ALPHABET ONLY):
+- You MUST respond in authentic, conversational TANGLISH (Tamil language spoken phonetically, written 100% ENTIRELY using the English alphabet / Latin letters).
+- STRICT NEGATIVE CONSTRAINT: DO NOT use any Tamil script characters or Tamil Unicode letters. NOT A SINGLE TAMIL SCRIPT CHARACTER IS ALLOWED.
+- Every Tamil word MUST be written phonetically using English letters only (for example: 'Polymorphism na enna na, oru object different forms edukuradhu...', 'Idhu romba mukkiyamaana concept...', 'Simply sollanum na...', 'Next point enna-na...').
+- Keep all technical terms, keywords, definitions, code syntax, and academic terms in clean standard English."""
+
+    if 'tamil' in lang_clean:
+        return "LANGUAGE REQUIREMENT: Respond in Tamil script. Keep core technical terms in English in parentheses alongside the Tamil translation."
+
+    if 'telugu' in lang_clean:
+        return "LANGUAGE REQUIREMENT: Respond in Telugu script. Keep core technical terms in English in parentheses alongside the Telugu translation."
+
+    return f"LANGUAGE REQUIREMENT: Respond in {language}. Keep technical terms in English in parentheses alongside the translation."
+
+
 class GeminiService:
     """Communicates with Google Gemini API using high-performance HTTP REST calls."""
 
@@ -105,10 +127,7 @@ class GeminiService:
             'normal': "Provide a clear, academic explanation."
         }
         style_instruction = mode_instructions.get(explanation_mode, mode_instructions['normal'])
-
-        lang_instruction = ""
-        if language and language.lower() != 'english':
-            lang_instruction = f"IMPORTANT: Respond in {language}. If technical terms are involved, keep the English term in parentheses alongside the translation."
+        lang_instruction = _get_language_instruction(language)
 
         history_str = ""
         if history:
@@ -215,10 +234,7 @@ ANSWER:"""
             'normal': "Provide a clear, academic explanation.",
         }
         style_instruction = mode_instructions.get(explanation_mode, mode_instructions['normal'])
-        lang_instruction = (
-            f"IMPORTANT: Respond in {language}. Keep technical terms in English in parentheses."
-            if language and language.lower() != 'english' else ""
-        )
+        lang_instruction = _get_language_instruction(language)
 
         history_str = ""
         if history:

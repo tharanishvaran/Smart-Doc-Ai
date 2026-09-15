@@ -33,7 +33,7 @@ const PROMPT_SUGGESTIONS = [
 const LANGUAGES = [
   { code: 'English', name: 'English' },
   { code: 'Tamil', name: 'Tamil (தமிழ்)' },
-  { code: 'Tamil + English', name: 'Tamil + English (Tanglish)' },
+  { code: 'Tanglish', name: 'Tanglish (Tamil in English)' },
   { code: 'Telugu', name: 'Telugu (తెలుగు)' }
 ];
 

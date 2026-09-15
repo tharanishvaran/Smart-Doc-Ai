@@ -63,6 +63,7 @@ def evaluate_answer():
     question = data.get('question', '')
     user_answer = data.get('user_answer', '')
     expected_answer = data.get('expected_answer', '')
+    explanation = data.get('explanation', '')
     topic_tag = data.get('topic_tag', '')
 
     if not question or not user_answer:
@@ -75,7 +76,8 @@ def evaluate_answer():
             question=question,
             user_answer=user_answer,
             expected_answer=expected_answer,
-            topic_tag=topic_tag
+            topic_tag=topic_tag,
+            explanation=explanation
         )
         return jsonify({'success': True, 'data': result})
     except Exception as e:
