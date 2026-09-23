@@ -73,6 +73,15 @@ def login():
         return error_response('Login failed. Please try again.', 500)
 
 
+@auth_bp.route('/google-config', methods=['GET'])
+def google_config():
+    """Return public Google OAuth Client ID for frontend initialization."""
+    from flask import current_app
+    import os
+    cid = current_app.config.get('GOOGLE_CLIENT_ID') or os.getenv('GOOGLE_CLIENT_ID', '')
+    return success_response(data={'client_id': cid})
+
+
 @auth_bp.route('/google', methods=['POST'])
 def google_auth():
     """Authenticate or register user using Google OAuth ID token or access token."""

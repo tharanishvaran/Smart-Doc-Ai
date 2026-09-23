@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 
-const DEFAULT_CLIENT_ID = '350905128338-qc9ef2ako2d3h61leogc6rl6esrerunj.apps.googleusercontent.com';
-
 export default function GoogleLoginButton({ text = 'Continue with Google', onError }) {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -13,7 +11,21 @@ export default function GoogleLoginButton({ text = 'Continue with Google', onErr
   const [originNotice, setOriginNotice] = useState(false);
   const tokenClientRef = useRef(null);
 
-  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID).trim();
+  const [clientId, setClientId] = useState((import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim());
+
+  useEffect(() => {
+    if (!clientId) {
+      fetch('/api/auth/google-config')
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+          const fetchedId = json?.data?.client_id;
+          if (fetchedId) {
+            setClientId(fetchedId.trim());
+          }
+        })
+        .catch(() => {});
+    }
+  }, [clientId]);
 
   // Check and load Google Identity Services SDK
   useEffect(() => {
