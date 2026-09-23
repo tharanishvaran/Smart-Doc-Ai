@@ -1,7 +1,10 @@
 import os
 from dotenv import load_dotenv
 
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(_BACKEND_DIR, '.env'))
 load_dotenv()
+
 
 
 class Config:
@@ -82,7 +85,7 @@ class Config:
     
     # Gemini API
     GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
-    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.1-flash-lite')
+    GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3.5-flash')
     GEMINI_MAX_TOKENS = int(os.getenv('GEMINI_MAX_TOKENS', 4096))
 
     # Ollama

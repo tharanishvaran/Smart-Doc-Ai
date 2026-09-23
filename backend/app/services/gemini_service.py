@@ -86,15 +86,16 @@ class GeminiService:
 
     def _get_candidate_models(self) -> list:
         try:
-            preferred = current_app.config.get('GEMINI_MODEL', 'gemini-3.1-flash-lite')
+            preferred = current_app.config.get('GEMINI_MODEL', 'gemini-3.5-flash')
         except Exception:
-            preferred = os.getenv('GEMINI_MODEL', 'gemini-3.1-flash-lite')
+            preferred = os.getenv('GEMINI_MODEL', 'gemini-3.5-flash')
 
         candidates = [
             preferred,
-            'gemini-3.1-flash-lite',  # universal fast model (~1.2s response time)
-            'gemini-3.5-flash',       # universal fast fallback (~1.3s response time)
-            'gemini-2.5-flash-lite',  # legacy fast model for older keys
+            'gemini-3.5-flash',       # universal fast active model (~1.2s response time)
+            'gemini-3.5-flash-lite',  # universal fast active lite model
+            'gemini-3.1-flash-lite',  # universal fast model
+            'gemini-flash-latest',    # fallback alias
         ]
         ordered = []
         for m in candidates:
@@ -162,7 +163,7 @@ ANSWER:"""
             'contents': [{'parts': [{'text': prompt}]}],
             'generationConfig': {
                 'temperature': 0.2,
-                'maxOutputTokens': 600,
+                'maxOutputTokens': 1200,
                 'topP': 0.85,
                 'topK': 20,
             }
@@ -190,11 +191,16 @@ ANSWER:"""
                         # Model not available for this key, try next model without discarding key
                         logger.info(f'Model {model_name} not found (404) for this key, trying next model...')
                         continue
-                    elif response.status_code in (429, 503):
+                    elif response.status_code == 503:
+                        # Model temporarily overloaded, try next model immediately
+                        logger.warning(f'Gemini model ({model_name}) overloaded (503) — trying next model...')
+                        last_error = f'{model_name} status 503'
+                        continue
+                    elif response.status_code == 429:
                         # Rate limit exceeded on this key: cool down this key for 60s and switch to next key immediately
                         _key_cooldown[active_key] = time.time() + 60.0
-                        logger.warning(f'Gemini key [{masked_key}] rate limited (HTTP {response.status_code}) — cooling down 60s, trying next key...')
-                        last_error = f'Key rate limited ({response.status_code})'
+                        logger.warning(f'Gemini key [{masked_key}] rate limited (HTTP 429) — cooling down 60s, trying next key...')
+                        last_error = f'Key rate limited (429)'
                         break  # rotate to next key immediately
                     elif response.status_code in (403, 400):
                         _key_cooldown[active_key] = time.time() + 300.0
@@ -262,8 +268,8 @@ ANSWER:"""
         payload = {
             'contents': [{'parts': [{'text': prompt}]}],
             'generationConfig': {
-                'temperature': 0.1,
-                'maxOutputTokens': 300,
+                'temperature': 0.2,
+                'maxOutputTokens': 1200,
                 'topP': 0.85,
                 'topK': 20,
             },
@@ -309,10 +315,14 @@ ANSWER:"""
                         elif resp.status_code == 404:
                             logger.info(f'Streaming: model {model_name} returned 404 for this key, trying next model...')
                             continue
-                        elif resp.status_code in (429, 503):
+                        elif resp.status_code == 503:
+                            logger.warning(f'Streaming: {model_name} overloaded (503) — trying next model...')
+                            last_error = f'{model_name} status 503'
+                            continue
+                        elif resp.status_code == 429:
                             _key_cooldown[active_key] = time.time() + 60.0
-                            logger.warning(f'Streaming: key [{masked_key}] hit 429/503 — cooling down 60s, rotating key...')
-                            last_error = f'Key rate limited ({resp.status_code})'
+                            logger.warning(f'Streaming: key [{masked_key}] hit 429 — cooling down 60s, rotating key...')
+                            last_error = f'Key rate limited (429)'
                             break  # rotate to next key immediately
                         elif resp.status_code in (403, 400):
                             _key_cooldown[active_key] = time.time() + 300.0
@@ -345,7 +355,10 @@ ANSWER:"""
                             return  # fallback succeeded
                     elif fb_resp.status_code == 404:
                         continue
-                    elif fb_resp.status_code in (429, 503):
+                    elif fb_resp.status_code == 503:
+                        last_error = f'{model_name} status 503'
+                        continue
+                    elif fb_resp.status_code == 429:
                         _key_cooldown[active_key] = time.time() + 60.0
                         break
                 except Exception as fb_err:
@@ -404,10 +417,14 @@ ANSWER:"""
                                 return "\n".join(text_parts).replace('**', '').strip()
                     elif response.status_code == 404:
                         continue
-                    elif response.status_code in (429, 503):
+                    elif response.status_code == 503:
+                        logger.warning(f'generate_raw: model {model_name} overloaded (503) — trying next model...')
+                        last_error = f'{model_name} status 503'
+                        continue
+                    elif response.status_code == 429:
                         _key_cooldown[active_key] = time.time() + 60.0
-                        logger.warning(f'generate_raw: key [{masked_key}] hit {response.status_code} — rotating key...')
-                        last_error = f'{model_name} status {response.status_code}'
+                        logger.warning(f'generate_raw: key [{masked_key}] hit 429 — rotating key...')
+                        last_error = f'Key rate limited (429)'
                         break  # rotate to next key immediately
                     elif response.status_code in (403, 400):
                         _key_cooldown[active_key] = time.time() + 300.0
