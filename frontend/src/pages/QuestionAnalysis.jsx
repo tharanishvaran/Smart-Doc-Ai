@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { documentService } from '../services/documentService';
 import api from '../services/api';
-import LoadingSpinner from '../components/LoadingSpinner';
 import SectionLoadingCard from '../components/SectionLoadingCard';
 import { 
   Search, 
@@ -11,7 +10,11 @@ import {
   TrendingUp, 
   AlertTriangle, 
   ListChecks,
-  ArrowRight
+  ArrowRight,
+  Layers,
+  Copy,
+  Check,
+  BookOpen
 } from 'lucide-react';
 import './QuestionAnalysis.css';
 
@@ -35,6 +38,8 @@ export default function QuestionAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(savedState?.result || null);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('topics'); // 'topics' | 'documents'
+  const [copiedDoc, setCopiedDoc] = useState(null);
 
   useEffect(() => {
     try {
@@ -57,22 +62,42 @@ export default function QuestionAnalysis() {
 
   const toggle = (id) => setSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
+  const selectAll = () => {
+    if (selected.length === documents.length) {
+      setSelected([]);
+    } else {
+      setSelected(documents.map(d => d.id));
+    }
+  };
+
   const analyze = async () => {
     if (selected.length === 0) return setError('Please select at least one document to analyze.');
-    setError(''); setAnalyzing(true); setResult(null);
+    setError(''); 
+    setAnalyzing(true); 
+    setResult(null);
     try {
       const res = await api.post('/dashboard/analyze', { document_ids: selected });
       setResult(res.data.data);
+      setActiveTab('topics');
     } catch (err) {
       setError(err.response?.data?.error || 'Analysis failed. Please try again.');
     } finally { 
       setAnalyzing(false); 
     }
-  };  return (
+  };
+
+  const copyDocQuestions = (docName, questions) => {
+    const text = `Document: ${docName}\n\n` + questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedDoc(docName);
+    setTimeout(() => setCopiedDoc(null), 2000);
+  };
+
+  return (
     <div className="analysis-page animate-fade-in">
       <div className="page-header">
         <h1>Question Paper & Topic Analysis</h1>
-        <p>Extract recurring exam topics, question patterns, and key concepts across your question papers.</p>
+        <p>Extract recurring exam topics, question patterns, and exact questions across your question papers.</p>
       </div>
 
       <div className="grid-2 analysis-grid">
@@ -83,7 +108,18 @@ export default function QuestionAnalysis() {
               <CheckSquare size={20} className="text-primary" />
               <h3>Select Target Documents</h3>
             </div>
-            <span className="badge badge-primary">{selected.length} selected</span>
+            <div className="panel-actions-header">
+              {documents.length > 0 && (
+                <button 
+                  type="button" 
+                  className="btn btn-ghost btn-xs select-all-btn" 
+                  onClick={selectAll}
+                >
+                  {selected.length === documents.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+              <span className="badge badge-primary">{selected.length} selected</span>
+            </div>
           </div>
 
           <p className="panel-subtitle">Select question papers or lecture notes to extract repeated exam questions.</p>
@@ -113,7 +149,7 @@ export default function QuestionAnalysis() {
                     <FileText size={18} />
                   </div>
                   <div className="doc-check-info">
-                    <div className="doc-check-name">{doc.original_filename}</div>
+                    <div className="doc-check-name" title={doc.original_filename}>{doc.original_filename}</div>
                     {doc.category_name && (
                       <span className="badge badge-primary badge-sm">{doc.category_name}</span>
                     )}
@@ -150,7 +186,7 @@ export default function QuestionAnalysis() {
             <div className="empty-results glass-card">
               <Sparkles size={48} className="empty-icon text-primary" />
               <h3>Intelligence Insights Ready</h3>
-              <p>Select your question papers on the left and click "Analyze Selected Papers" to generate repeated topic summaries.</p>
+              <p>Select your question papers on the left and click "Analyze Selected Papers" to extract exact questions and repeated exam topics.</p>
             </div>
           )}
 
@@ -159,65 +195,176 @@ export default function QuestionAnalysis() {
               <SectionLoadingCard 
                 theme="analysis" 
                 mode="action" 
-                title="Deep RAG Paper Pattern Mining & Prediction..." 
+                title="Mining Exact Questions & Cross-Paper Recurrence..." 
               />
             </div>
           )}
 
           {result && (
             <div className="results-content animate-fade-in">
-              {/* Summary Card */}
+              {/* Executive Summary Card */}
               <div className="summary-card glass-card">
                 <div className="summary-card-header">
                   <TrendingUp size={20} className="text-primary" />
                   <h3>Executive Analysis Summary</h3>
                 </div>
                 <p className="summary-text">{result.summary}</p>
+                
+                <div className="summary-stats-bar">
+                  <div className="summary-stat-pill">
+                    <span className="stat-label">Scanned Papers:</span>
+                    <span className="stat-value">{result.total_documents}</span>
+                  </div>
+                  <div className="summary-stat-pill">
+                    <span className="stat-label">Exact Questions Extracted:</span>
+                    <span className="stat-value">{result.total_questions_found}</span>
+                  </div>
+                  <div className="summary-stat-pill">
+                    <span className="stat-label">Recurring Themes:</span>
+                    <span className="stat-value">{result.topics?.length || 0}</span>
+                  </div>
+                </div>
               </div>
 
-              {result.topics?.length === 0 && (
-                <div className="glass-card empty-topics">
-                  <p>No repeated topics detected across the selected documents.</p>
+              {/* View Switcher Tabs */}
+              <div className="analysis-tabs-nav">
+                <button
+                  className={`tab-nav-btn ${activeTab === 'topics' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('topics')}
+                >
+                  <Sparkles size={16} />
+                  <span>Recurring Exam Topics ({result.topics?.length || 0})</span>
+                </button>
+                <button
+                  className={`tab-nav-btn ${activeTab === 'documents' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('documents')}
+                >
+                  <BookOpen size={16} />
+                  <span>Exact Questions by Document ({result.exact_questions_by_doc?.length || 0})</span>
+                </button>
+              </div>
+
+              {/* TAB 1: Recurring Topics */}
+              {activeTab === 'topics' && (
+                <div className="topics-list-container animate-fade-in">
+                  {result.topics?.length === 0 && (
+                    <div className="glass-card empty-topics">
+                      <p>No repeated topics detected across the selected documents.</p>
+                    </div>
+                  )}
+
+                  {result.topics?.map((topic, i) => (
+                    <div key={i} className="topic-card glass-card card-hover">
+                      <div className="topic-card-header">
+                        <div className="topic-badge-rank">
+                          Topic #{i + 1}
+                        </div>
+                        <div className="topic-header-badges">
+                          <span className="badge badge-warning">
+                            Frequency: {topic.frequency} paper{topic.frequency > 1 ? 's' : ''}
+                          </span>
+                          {topic.total_occurrences > 0 && (
+                            <span className="badge badge-primary">
+                              {topic.total_occurrences} question{topic.total_occurrences > 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <h4 className="topic-title">{topic.topic}</h4>
+
+                      {/* Source Document Tags */}
+                      {topic.document_names?.length > 0 && (
+                        <div className="topic-doc-sources">
+                          <span className="sources-label">Found in:</span>
+                          <div className="sources-tags">
+                            {topic.document_names.map((dName, dIdx) => (
+                              <span key={dIdx} className="badge badge-secondary badge-sm doc-source-tag" title={dName}>
+                                <FileText size={11} />
+                                {dName}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recurring Exact Questions */}
+                      {topic.sample_questions?.length > 0 && (
+                        <div className="topic-samples-box">
+                          <div className="samples-heading">
+                            <ListChecks size={15} />
+                            <span>Exact Recurring Questions ({topic.sample_questions.length}):</span>
+                          </div>
+                          <div className="samples-list">
+                            {topic.sample_questions.map((q, j) => (
+                              <div key={j} className="sample-q-item">
+                                <span className="sample-q-num">{j + 1}.</span>
+                                <span className="sample-q-text">"{q}"</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Exam Advice Note */}
+                      {topic.note && (
+                        <div className="topic-note-box">
+                          <AlertTriangle size={15} className="text-warning flex-shrink-0" />
+                          <span>{topic.note}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
-              {/* Topic Clusters */}
-              {result.topics?.map((topic, i) => (
-                <div key={i} className="topic-card glass-card card-hover">
-                  <div className="topic-card-header">
-                    <div className="topic-badge-rank">
-                      Topic #{i + 1}
-                    </div>
-                    <span className="badge badge-warning">
-                      Frequency: {topic.frequency} paper{topic.frequency > 1 ? 's' : ''}
-                    </span>
-                  </div>
-
-                  <h4 className="topic-title">{topic.topic}</h4>
-
-                  {topic.sample_questions?.length > 1 && (
-                    <div className="topic-samples-box">
-                      <div className="samples-heading">
-                        <ListChecks size={14} />
-                        <span>Recurring Question Forms:</span>
-                      </div>
-                      {topic.sample_questions.slice(1, 3).map((q, j) => (
-                        <div key={j} className="sample-q-item">
-                          <ArrowRight size={14} className="text-primary" />
-                          <span>"{q}"</span>
+              {/* TAB 2: Exact Questions by Document */}
+              {activeTab === 'documents' && (
+                <div className="exact-docs-container animate-fade-in">
+                  {result.exact_questions_by_doc?.map((docData, docIdx) => (
+                    <div key={docIdx} className="exact-doc-card glass-card">
+                      <div className="exact-doc-header">
+                        <div className="exact-doc-title-box">
+                          <FileText size={20} className="text-primary" />
+                          <div>
+                            <h4 className="exact-doc-name">{docData.document_name}</h4>
+                            <span className="exact-doc-count">{docData.total_questions} exact questions extracted</span>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <button
+                          className="btn btn-secondary btn-sm copy-doc-btn"
+                          onClick={() => copyDocQuestions(docData.document_name, docData.questions)}
+                        >
+                          {copiedDoc === docData.document_name ? (
+                            <>
+                              <Check size={14} className="text-success" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={14} />
+                              <span>Copy All</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
 
-                  {topic.note && (
-                    <div className="topic-note-box">
-                      <AlertTriangle size={14} className="text-warning" />
-                      <span>{topic.note}</span>
+                      <div className="exact-questions-list">
+                        {docData.questions?.length === 0 ? (
+                          <div className="empty-doc-qs">No questions identified in this document.</div>
+                        ) : (
+                          docData.questions.map((qText, qIdx) => (
+                            <div key={qIdx} className="exact-q-row">
+                              <span className="exact-q-badge">Q{qIdx + 1}</span>
+                              <span className="exact-q-content">{qText}</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

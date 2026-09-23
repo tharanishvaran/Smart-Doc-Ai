@@ -28,6 +28,17 @@
   gap: 10px;
 }
 
+.panel-actions-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.select-all-btn {
+  font-size: 0.76rem;
+  padding: 2px 8px;
+}
+
 .panel-subtitle {
   font-size: 0.88rem;
   color: var(--text-muted);
@@ -59,6 +70,8 @@
 
 .doc-check-icon {
   color: var(--primary);
+  display: flex;
+  align-items: center;
 }
 
 .doc-check-info {
@@ -112,6 +125,7 @@
   padding: 24px;
   background: var(--primary-subtle);
   border: 1px solid var(--border-active);
+  border-radius: var(--radius-lg);
 }
 
 .summary-card-header {
@@ -127,11 +141,85 @@
   color: var(--text-main);
 }
 
+.summary-stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.summary-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface, rgba(255, 255, 255, 0.7));
+  border: 1px solid var(--border);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.stat-label {
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+/* Tab Navigation */
+.analysis-tabs-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.tab-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-nav-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+}
+
+.tab-nav-btn.active {
+  color: var(--primary);
+  background: var(--primary-subtle);
+  border-color: var(--border-active);
+  font-weight: 700;
+}
+
+/* Topic Cards */
+.topics-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .topic-card {
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  border-radius: var(--radius-lg);
 }
 
 .topic-card-header {
@@ -140,8 +228,14 @@
   justify-content: space-between;
 }
 
+.topic-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .topic-badge-rank {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   color: var(--primary);
@@ -149,44 +243,195 @@
 }
 
 .topic-title {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.4;
 }
 
+.topic-doc-sources {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sources-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.sources-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.doc-source-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .topic-samples-box {
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: var(--bg-surface-hover);
   border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  border: 1px solid var(--border);
 }
 
 .samples-heading {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--text-muted);
+  color: var(--text-main);
+}
+
+.samples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sample-q-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: 10px;
+  font-size: 0.88rem;
   color: var(--text-main);
+  line-height: 1.5;
+}
+
+.sample-q-num {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.84rem;
+  min-width: 18px;
+}
+
+.sample-q-text {
+  flex: 1;
 }
 
 .topic-note-box {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+}
+
+/* Exact Questions by Document View */
+.exact-docs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.exact-doc-card {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-radius: var(--radius-lg);
+}
+
+.exact-doc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 14px;
+}
+
+.exact-doc-title-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exact-doc-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.exact-doc-count {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.copy-doc-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exact-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.exact-q-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-surface-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  transition: all var(--transition-fast);
+}
+
+.exact-q-row:hover {
+  border-color: var(--border-active);
+  background: var(--primary-subtle);
+}
+
+.exact-q-badge {
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.exact-q-content {
+  color: var(--text-main);
+  flex: 1;
+}
+
+.empty-doc-qs {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px;
 }
 
 @media (max-width: 768px) {
@@ -215,5 +460,12 @@
   }
   .doc-check-name {
     font-size: 0.82rem;
+  }
+  .exact-doc-card {
+    padding: 16px;
+  }
+  .analysis-tabs-nav {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

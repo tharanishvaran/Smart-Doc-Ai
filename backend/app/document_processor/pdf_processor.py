@@ -95,12 +95,21 @@ class PDFProcessor:
         # Collapse 3+ newlines to double newline
         text = re.sub(r'\n{3,}', '\n\n', text)
         
-        # Merge soft line breaks within paragraphs while preserving paragraph breaks
+        # Merge soft line breaks within regular paragraphs while preserving lists, questions, and section breaks
         paragraphs = text.split('\n\n')
         cleaned_paras = []
         for p in paragraphs:
             lines = [l.strip() for l in p.split('\n') if l.strip()]
-            if lines:
+            if not lines:
+                continue
+            # If paragraph contains question lines or numbered lists or tables, keep newlines
+            has_structured_lines = any(
+                re.match(r'^(?:Q\d+|Question|\d+[\.\)]|[a-e]\)|[ivx]+[\.\)]|•|\*|-|\|)', l, re.IGNORECASE)
+                for l in lines
+            )
+            if has_structured_lines:
+                cleaned_paras.append('\n'.join(lines))
+            else:
                 cleaned_paras.append(' '.join(lines))
         
         return '\n\n'.join(cleaned_paras).strip()

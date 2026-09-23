@@ -12,7 +12,10 @@ import {
   FolderOpen,
   Plus,
   X,
-  FileCheck
+  FileCheck,
+  Cpu,
+  Layers,
+  Activity
 } from 'lucide-react';
 import './Documents.css';
 
@@ -333,6 +336,75 @@ export default function Documents() {
         )}
       </div>
 
+      {/* Active Vector Indexing Animation Banner */}
+      {(uploading || documents.some(d => ['PROCESSING', 'processing', 'UPLOADED', 'uploaded'].includes(d.upload_status))) && (
+        <div className="indexing-active-banner glass-card animate-fade-in">
+          <div className="indexing-banner-header">
+            <div className="indexing-core-icon-box">
+              <div className="indexing-pulse-rings">
+                <span className="ring ring-1"></span>
+                <span className="ring ring-2"></span>
+              </div>
+              <Cpu className="indexing-core-icon spin-slow" size={26} />
+            </div>
+            <div className="indexing-banner-title">
+              <div className="indexing-headline">
+                <h4>Active Vector Indexing & RAG Sync</h4>
+                <span className="badge badge-warning badge-pulse">
+                  <Sparkles size={12} className="spin" />
+                  {uploading ? 'UPLOADING' : 'CHUNKING & EMBEDDING'}
+                </span>
+              </div>
+              <p className="indexing-subtext">
+                {uploading 
+                  ? (uploadStage || `Transferring files... ${uploadProgress}%`)
+                  : `Extracting text, computing semantic vector embeddings, and indexing into vector database.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="indexing-pipeline-steps">
+            <div className={`pipeline-step ${uploading ? 'active' : 'completed'}`}>
+              <div className="step-icon-bubble">
+                {uploading ? <Sparkles size={14} className="spin" /> : <CheckCircle2 size={14} />}
+              </div>
+              <span className="step-label">1. Upload & Ingest</span>
+            </div>
+            <div className="pipeline-connector-line">
+              <div className="connector-laser" />
+            </div>
+            <div className={`pipeline-step ${!uploading ? 'active' : 'pending'}`}>
+              <div className="step-icon-bubble">
+                {!uploading ? <Sparkles size={14} className="spin" /> : <Layers size={14} />}
+              </div>
+              <span className="step-label">2. Semantic Chunking</span>
+            </div>
+            <div className="pipeline-connector-line">
+              <div className="connector-laser" />
+            </div>
+            <div className={`pipeline-step ${!uploading ? 'active' : 'pending'}`}>
+              <div className="step-icon-bubble">
+                <Cpu size={14} className={!uploading ? 'pulse-icon' : ''} />
+              </div>
+              <span className="step-label">3. Vector Embeddings</span>
+            </div>
+          </div>
+
+          <div className="indexing-progress-bar-container">
+            <div className="indexing-progress-bar-track">
+              <div 
+                className="indexing-progress-bar-fill shimmer-laser" 
+                style={{ width: uploading ? `${uploadProgress}%` : '85%' }} 
+              />
+            </div>
+            <div className="indexing-progress-meta">
+              <span>{uploading ? `${uploadProgress}% Completed` : 'Background indexing active · live updating'}</span>
+              <span className="badge badge-sm badge-secondary">Auto-syncing every 2.5s</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="alert alert-error animate-fade-in" style={{ marginBottom: 20 }}>
           <AlertCircle size={18} />
@@ -398,49 +470,66 @@ export default function Documents() {
         </div>
       ) : (
         <div className="doc-grid">
-          {filteredDocs.map(doc => (
-            <div key={doc.id} className="doc-card glass-card card-hover">
-              <div className="doc-card-top">
-                <div className="doc-card-icon">
-                  <FileText size={24} />
-                </div>
-                <span className={`badge ${
-                  (doc.upload_status === 'INDEXED' || doc.upload_status === 'completed') ? 'badge-success' : 
-                  (doc.upload_status === 'FAILED' || doc.upload_status === 'failed') ? 'badge-danger' : 'badge-warning'
-                }`}>
-                  {doc.upload_status === 'PROCESSING' || doc.upload_status === 'processing'
-                    ? `PROCESSING ${doc.processing_progress || 0}%`
-                    : (doc.upload_status || 'UPLOADED').toUpperCase()}
-                </span>
-              </div>
+          {filteredDocs.map(doc => {
+            const isProcessing = ['PROCESSING', 'processing', 'UPLOADED', 'uploaded'].includes(doc.upload_status);
+            return (
+              <div key={doc.id} className={`doc-card glass-card card-hover ${isProcessing ? 'is-indexing' : ''}`}>
+                {isProcessing && <div className="card-radar-scanner" />}
 
-              <div className="doc-card-body">
-                <h4 className="doc-card-title" title={doc.original_filename}>
-                  {doc.original_filename}
-                </h4>
-                
-                <div className="doc-card-meta">
-                  {doc.category_name && (
-                    <span className="badge badge-primary">{doc.category_name}</span>
-                  )}
-                  <span className="meta-text">
-                    {doc.total_pages ? `${doc.total_pages} pages` : ''} 
-                    {doc.file_size ? ` · ${formatSize(doc.file_size)}` : ''}
+                <div className="doc-card-top">
+                  <div className={`doc-card-icon ${isProcessing ? 'indexing-icon-glow' : ''}`}>
+                    <FileText size={24} />
+                  </div>
+                  <span className={`badge ${
+                    (doc.upload_status === 'INDEXED' || doc.upload_status === 'completed') ? 'badge-success' : 
+                    (doc.upload_status === 'FAILED' || doc.upload_status === 'failed') ? 'badge-danger' : 'badge-warning badge-pulse'
+                  }`}>
+                    {isProcessing ? (
+                      <>
+                        <Sparkles size={12} className="spin" />
+                        <span>INDEXING {doc.processing_progress ? `${doc.processing_progress}%` : ''}</span>
+                      </>
+                    ) : (doc.upload_status || 'UPLOADED').toUpperCase()}
                   </span>
                 </div>
-              </div>
 
-              <div className="doc-card-actions">
-                <button 
-                  className="btn btn-ghost btn-sm delete-btn" 
-                  onClick={() => handleDelete(doc.id, doc.original_filename)}
-                >
-                  <Trash2 size={16} />
-                  <span>Delete</span>
-                </button>
+                <div className="doc-card-body">
+                  <h4 className="doc-card-title" title={doc.original_filename}>
+                    {doc.original_filename}
+                  </h4>
+                  
+                  <div className="doc-card-meta">
+                    {doc.category_name && (
+                      <span className="badge badge-primary">{doc.category_name}</span>
+                    )}
+                    <span className="meta-text">
+                      {doc.total_pages ? `${doc.total_pages} pages` : ''} 
+                      {doc.file_size ? ` · ${formatSize(doc.file_size)}` : ''}
+                    </span>
+                  </div>
+
+                  {isProcessing && (
+                    <div className="card-indexing-meter">
+                      <div 
+                        className="card-indexing-bar shimmer-laser" 
+                        style={{ width: `${doc.processing_progress || 45}%` }} 
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="doc-card-actions">
+                  <button 
+                    className="btn btn-ghost btn-sm delete-btn" 
+                    onClick={() => handleDelete(doc.id, doc.original_filename)}
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
